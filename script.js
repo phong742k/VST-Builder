@@ -826,7 +826,7 @@ function showPlaceModal(place) {
     document.getElementById('modal-title').innerText = place.name || '';
     document.getElementById('modal-address').innerText = place.address ? `📍 ${place.address}` : '';
     document.getElementById('modal-time').innerText = place.timeToVisit || 60;
-    document.getElementById('modal-price').innerText = place.price || 'Free';
+    document.getElementById('modal-price').innerText = formatPriceDisplay(place.price);
     
     // Đưa mô tả vào một box cố định chiều cao, bật scroll riêng, đồng thời ghim cứng cụm nút ở đáy modal
     const modalBox = document.querySelector('#place-modal > div');
@@ -1936,5 +1936,91 @@ async function submitSupportRequest() {
         alert("✨ Your request has been sent successfully! Our team will contact you soon.");
         document.getElementById('req-message').value = '';
         closeSupportModal();
+    }
+}
+
+// --- 1. TỶ GIÁ VÀ TIỆN ÍCH TIỀN TỆ ---
+let currentExchangeRate = 25000; // Giá trị mặc định
+let currentCurrencyUnit = 'VND'; // Mặc định ban đầu là VND
+
+// Gọi fetch tỷ giá ngay khi trang khởi động
+async function initUserCurrencySettings() {
+    if (typeof supabaseClient !== 'undefined') {
+        const { data, error } = await supabaseClient.from('settings').select('*').eq('key', 'exchange_rate').maybeSingle();
+        if (!error && data && data.value) {
+            currentExchangeRate = parseFloat(data.value) || 25000;
+        }
+    }
+}
+initUserCurrencySettings();
+
+// Hàm xử lý khi user bấm chọn VND hoặc USD trên giao diện
+function switchUserCurrency(unit) {
+    currentCurrencyUnit = unit;
+    
+    // Đổi màu hiển thị sáng/tối cho nút tương ứng như mày mô tả
+    const vndBtn = document.getElementById('curr-vnd');
+    const usdBtn = document.getElementById('curr-usd');
+    
+    if (unit === 'VND') {
+        vndBtn.style.background = '#0f172a';
+        vndBtn.style.color = 'white';
+        usdBtn.style.background = 'transparent';
+        usdBtn.style.color = '#64748b';
+    } else {
+        usdBtn.style.background = '#0f172a';
+        usdBtn.style.color = 'white';
+        vndBtn.style.background = 'transparent';
+        vndBtn.style.color = '#64748b';
+    }
+
+    // Render lại giao diện tour/địa điểm để cập nhật tiền tệ ngay lập tức
+    if (typeof renderCurrentItinerary === 'function') {
+        renderCurrentItinerary();
+    } else if (typeof applyFilters === 'function') {
+        applyFilters();
+    }
+
+    // Nếu modal chi tiết đang mở, update lại giá tiền ngay lập tức
+    const modalPriceEl = document.getElementById('modal-price');
+    if (modalPriceEl && currentActivePlace) {
+        modalPriceEl.innerText = formatPriceDisplay(currentActivePlace.price);
+    }
+}
+
+// --- 2. HÀM FORMAT GIÁ TIỀN (XỬ LÝ MIN - MAX, FREE, SỐ 0) ---
+function formatPriceDisplay(priceStr, currency = currentCurrencyUnit) {
+    if (!priceStr) return 'Free';
+    let cleanStr = priceStr.toString().trim().toLowerCase();
+    
+    // Nếu là free hoặc bằng 0 thì trả về "Free"
+    if (cleanStr === 'free' || cleanStr === '0' || cleanStr === '0 vnd' || cleanStr === '0 usd') {
+        return 'Free';
+    }
+
+    // Xử lý khoảng giá Min - Max (có dấu gạch ngang '-')
+    let parts = priceStr.split('-').map(p => p.trim());
+    if (parts.length === 2) {
+        let minFormatted = convertSinglePrice(parts[0], currency);
+        let maxFormatted = convertSinglePrice(parts[1], currency);
+        return `${minFormatted} - ${maxFormatted}`;
+    } else {
+        return convertSinglePrice(priceStr, currency);
+    }
+}
+
+function convertSinglePrice(str, targetCurrency) {
+    let num = parseFloat(str.replace(/[^0-9.]/g, '')) || 0;
+    if (num === 0) return 'Free';
+
+    // Nhận diện xem giá gốc đang là USD hay VND
+    let isUSD = str.toUpperCase().includes('USD') || (!str.toUpperCase().includes('VND') && num < 1000);
+
+    if (targetCurrency === 'USD') {
+        let valInUSD = isUSD ? num : num / currentExchangeRate;
+        return `$${valInUSD.toFixed(2)}`;
+    } else {
+        let valInVND = isUSD ? num * currentExchangeRate : num;
+        return valInVND.toLocaleString('vi-VN') + ' VND';
     }
 }

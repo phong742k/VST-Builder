@@ -103,6 +103,12 @@
 
     <div class="header">
         <h2 onclick="location.reload()">VST Itinerary Builder</h2>
+        <!-- KHUNG CHUYỂN ĐỔI TIỀN TỆ (USD / VND) -->
+        <div id="currency-switcher" style="display: inline-flex; gap: 5px; align-items: center; margin-left: 15px; font-size: 13px; font-weight: bold; background: #f1f5f9; padding: 4px 8px; border-radius: 20px; border: 1px solid #cbd5e1;">
+            <span onclick="switchUserCurrency('VND')" id="curr-vnd" style="cursor: pointer; padding: 2px 6px; border-radius: 12px; background: #0f172a; color: white;">VND</span>
+            <span style="color: #cbd5e1;">|</span>
+            <span onclick="switchUserCurrency('USD')" id="curr-usd" style="cursor: pointer; padding: 2px 6px; border-radius: 12px; color: #64748b;">USD</span>
+        </div>
         <div id="auth-container" style="display: flex; align-items: center; gap: 15px;">
             <span id="user-email" style="font-size: 13px; font-weight: bold; color: #333;"></span>
             <button id="profile-btn" onclick="openProfileModal()" style="display:none; background: #2196f3; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">👤 My Profile</button>

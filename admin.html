@@ -394,6 +394,7 @@
             </div>
         </div>
     </div>
+
     <!-- MODAL XEM CHI TIẾT KHÁCH HÀNG (PROFILE + LỊCH TRÌNH) -->
     <div id="customer-detail-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 4000; justify-content: center; align-items: center;">
         <div style="background: white; width: 650px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; max-height: 85vh; overflow-y: auto;">
@@ -411,6 +412,36 @@
             <!-- DANH SÁCH LỊCH TRÌNH -->
             <div style="font-size: 13px; font-weight: bold; color: #334155; margin-bottom: 10px;">🗺️ Danh sách lịch trình đã tạo:</div>
             <div id="modal-itineraries-content" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL CÀI ĐẶT HỆ THỐNG CHUNG -->
+    <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2500; justify-content: center; align-items: center;">
+        <div style="background: white; width: 450px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative;">
+            <button onclick="closeSettingsModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+            <h3 style="margin-top: 0; color: #0d47a1; margin-bottom: 15px;">⚙️ Hệ Thống Cài Đặt Chung</h3>
+            
+            <!-- Danh sách các mục setting có thể mở rộng trong tương lai -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 5px;">Chọn mục cần cài đặt:</label>
+                    <select id="setting-category" onchange="switchSettingPanel(this.value)" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                        <option value="exchange-rate">💱 Tỷ giá quy đổi tiền tệ (USD / VND)</option>
+                        <!-- Sau này có thêm setting gì chỉ cần nhét thêm <option> vào đây -->
+                    </select>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+
+                <!-- PANEL 1: TỶ GIÁ QUY ĐỔI -->
+                <div id="setting-panel-exchange-rate" class="setting-sub-panel">
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 5px;">1 USD bằng bao nhiêu VND?</label>
+                        <input type="number" id="setting-exchange-rate" value="25000" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                    </div>
+                    <button onclick="saveExchangeRate()" style="background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; width: 100%;">Lưu Tỷ Giá</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -442,6 +473,7 @@
                 fetchPlacesLibrary();
                 loadAdminTemplates();
                 loadAdminDraftsList();
+                loadExchangeRateSetting();
             } else if (currentUser) {
                 alert("Tài khoản này không có quyền quản trị viên!");
                 await supabaseClient.auth.signOut();
@@ -2219,28 +2251,39 @@
         }
     }
 
-    // Tải tỷ giá khi mở trang admin
+    // --- HỆ THỐNG CÀI ĐẶT CHUNG (SETTINGS MODAL) ---
+    async function openSettingsModal() {
+        document.getElementById('settings-modal').style.display = 'flex';
+        await loadExchangeRateSetting();
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settings-modal').style.display = 'none';
+    }
+
+    function switchSettingPanel(category) {
+        document.querySelectorAll('.setting-sub-panel').forEach(p => p.style.display = 'none');
+        let target = document.getElementById(`setting-panel-${category}`);
+        if (target) target.style.display = 'block';
+    }
+
     async function loadExchangeRateSetting() {
-        const { data } = await supabaseClient.from('settings').select('*').eq('key', 'exchange_rate').maybeSingle();
-        if (data && data.value) {
+        const { data, error } = await supabaseClient.from('settings').select('*').eq('key', 'exchange_rate').maybeSingle();
+        if (!error && data && data.value) {
             document.getElementById('setting-exchange-rate').value = data.value;
         }
     }
 
-    // Lưu tỷ giá lên Supabase
     async function saveExchangeRate() {
         let rate = parseFloat(document.getElementById('setting-exchange-rate').value) || 25000;
         const { error } = await supabaseClient.from('settings').upsert({ key: 'exchange_rate', value: rate });
         if (error) {
             alert("Lỗi lưu tỷ giá: " + error.message);
         } else {
-            alert("✨ Đã cập nhật tỷ giá thành công! Toàn bộ user sẽ áp dụng tỷ giá mới này.");
+            alert("✨ Đã cập nhật tỷ giá thành công!");
+            closeSettingsModal();
         }
     }
-
-    // Gọi hàm này bên trong sự kiện khi admin đăng nhập thành công
-    // (Thêm vào chỗ fetchPlacesLibrary(); loadAdminTemplates(); ...):
-    loadExchangeRateSetting();
     </script>
 </body>
 </html>

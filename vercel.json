@@ -1,5 +1,7 @@
 {
+  "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/itinerary_builder.html" }
+    { "source": "/", "destination": "/itinerary_builder.html" },
+    { "source": "/admin", "destination": "/admin.html" }
   ]
 }

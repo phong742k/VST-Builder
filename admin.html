@@ -476,7 +476,12 @@
         });
 
         async function handleAdminLogin() {
-            await supabaseClient.auth.signInWithOAuth({ provider: 'google' });
+            await supabaseClient.auth.signInWithOAuth({ 
+                provider: 'google',
+                options: {
+                    redirectTo: 'https://vst-builder.vercel.app/admin'
+                }
+            });
         }
 
         async function handleAdminLogout() {

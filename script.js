@@ -1958,33 +1958,32 @@ initUserCurrencySettings();
 function switchUserCurrency(unit) {
     currentCurrencyUnit = unit;
     
-    // Đổi màu hiển thị sáng/tối cho nút tương ứng như mày mô tả
-    const vndBtn = document.getElementById('curr-vnd');
-    const usdBtn = document.getElementById('curr-usd');
+    // Đổi màu cho 2 nút VND / USD ở menu nổi góc phải
+    const vndBtn = document.getElementById('float-curr-vnd');
+    const usdBtn = document.getElementById('float-curr-usd');
     
-    if (unit === 'VND') {
-        vndBtn.style.background = '#0f172a';
-        vndBtn.style.color = 'white';
-        usdBtn.style.background = 'transparent';
-        usdBtn.style.color = '#64748b';
-    } else {
-        usdBtn.style.background = '#0f172a';
-        usdBtn.style.color = 'white';
-        vndBtn.style.background = 'transparent';
-        vndBtn.style.color = '#64748b';
+    if (vndBtn && usdBtn) {
+        if (unit === 'VND') {
+            vndBtn.style.background = '#0f172a';
+            vndBtn.style.color = 'white';
+            usdBtn.style.background = 'transparent';
+            usdBtn.style.color = '#64748b';
+        } else {
+            usdBtn.style.background = '#0f172a';
+            usdBtn.style.color = 'white';
+            vndBtn.style.background = 'transparent';
+            vndBtn.style.color = '#64748b';
+        }
     }
 
-    // Render lại giao diện tour/địa điểm để cập nhật tiền tệ ngay lập tức
-    if (typeof renderCurrentItinerary === 'function') {
-        renderCurrentItinerary();
-    } else if (typeof applyFilters === 'function') {
-        applyFilters();
-    }
-
-    // Nếu modal chi tiết đang mở, update lại giá tiền ngay lập tức
+    // Cập nhật lại giá tiền trên modal và toàn bộ card bên ngoài
     const modalPriceEl = document.getElementById('modal-price');
-    if (modalPriceEl && currentActivePlace) {
+    if (modalPriceEl && typeof currentActivePlace !== 'undefined' && currentActivePlace) {
         modalPriceEl.innerText = formatPriceDisplay(currentActivePlace.price);
+    }
+
+    if (typeof applyFilters === 'function') {
+        applyFilters();
     }
 }
 

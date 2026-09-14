@@ -1,5 +1,5 @@
 {
-  "routes": [
-    { "src": "/", "destination": "/itinerary_builder.html" }
+  "rewrites": [
+    { "source": "/", "destination": "/itinerary_builder.html" }
   ]
 }

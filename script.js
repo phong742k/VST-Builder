@@ -193,7 +193,7 @@ function renderLibrary(places) {
                 <h4>${place.name}</h4>
                 ${addressHtml}
                 ${mapButtonHtml}
-                <p style="margin-top: 4px;">⏱️ ${place.timeToVisit} mins | 💰 ${place.price}</p>
+                <p style="margin-top: 4px;">⏱️ ${place.timeToVisit} mins | 💰 ${formatPriceDisplay(place.price)}</p>
                 <p class="place-desc">${place.description}</p>
                 <button onclick="event.stopPropagation(); addPlaceQuickly('${safeJson}')" style="margin-top: 6px; background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">➕ Add to Trip</button>
             </div>

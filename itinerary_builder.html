@@ -794,13 +794,6 @@
         </div>
     </div>
 
-    <!-- NÚT MỞ FORM YÊU CẦU HỖ TRỢ (NẰM TRÊN NÚT PDF) -->
-    <div id="support-request-widget" style="position: fixed; bottom: 145px; right: 25px; z-index: 9999; font-family: Arial, sans-serif;">
-        <div onclick="openSupportModal()" style="width: 50px; height: 50px; background: #8b5cf6; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25); transition: transform 0.2s;" title="Request Consultation & Support">
-            <span style="font-size: 22px; color: white;">🙋‍♂️</span>
-        </div>
-    </div>
-
     <!-- MODAL FORM YÊU CẦU HỖ TRỢ -->
     <div id="support-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center;">
         <div style="background: white; width: 450px; max-width: 90%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative;">
@@ -838,33 +831,6 @@
         </div>
     </div>
 
-    <!-- FLOATING SUPPORT WIDGET (2 NÚT LOGO TRÒN NẰM TRÊN NÚT PDF) -->
-    <div id="vst-support-widget" style="position: fixed; bottom: 85px; right: 25px; z-index: 9999; font-family: Arial, sans-serif;">
-        <!-- Nút tròn chính mở menu -->
-        <div onclick="toggleSupportMenu()" style="width: 50px; height: 50px; background: #2563eb; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25); transition: transform 0.2s;" title="Support">
-            <span style="font-size: 22px; color: white;">💬</span>
-        </div>
-
-        <!-- Menu chứa 2 nút logo tròn (Mặc định ẩn) -->
-        <div id="vst-support-menu" style="position: absolute; bottom: 60px; right: 0; display: none; flex-direction: column; gap: 10px;">
-            
-            <!-- Nút tròn Facebook -->
-            <a href="https://www.facebook.com/vietnam.solotrip" target="_blank" title="Facebook" style="width: 45px; height: 45px; background: #1877f2; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-decoration: none; transition: transform 0.2s;">
-                <svg style="width: 22px; height: 22px; fill: white;" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-            </a>
-
-            <!-- Nút tròn Instagram -->
-            <a href="https://www.instagram.com/vietnam.solotrip/" target="_blank" title="Instagram" style="width: 45px; height: 45px; background: radial-gradient(circle at 30% 107%, #fdf497 0%, #df497d 5%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-decoration: none; transition: transform 0.2s;">
-                <svg style="width: 20px; height: 20px; fill: white;" viewBox="0 0 24 24">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                </svg>
-            </a>
-
-        </div>
-    </div>
-
     <script>
         function toggleSupportMenu() {
             const menu = document.getElementById('vst-support-menu');
@@ -879,5 +845,87 @@
             }
         });
     </script>
+
+    <!-- ================= HỆ THỐNG NÚT NỔI (FLOATING WIDGETS) ================= -->
+    <div style="position: fixed; bottom: 25px; right: 25px; display: flex; flex-direction: column; gap: 12px; z-index: 9999; align-items: flex-end;">
+
+        <!-- 1. NÚT CONTACT US (Ở TRÊN) -->
+        <div id="contact-widget-container" style="position: relative; display: flex; align-items: center;">
+            <!-- Menu con bung sang TRÁI -->
+            <div id="contact-submenu" style="display: none; position: absolute; right: 60px; background: white; padding: 6px 10px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; gap: 8px; align-items: center; white-space: nowrap;">
+                <a href="https://www.facebook.com/vietnam.solotrip" target="_blank" style="background: #1877f2; color: white; padding: 6px 12px; border-radius: 20px; text-decoration: none; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 4px;">Facebook</a>
+                <a href="https://www.instagram.com/vietnam.solotrip/" target="_blank" style="background: radial-gradient(circle at 30% 107%, #fdf497 0%, #df497d 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); color: white; padding: 6px 12px; border-radius: 20px; text-decoration: none; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 4px;">Instagram</a>
+            </div>
+            <!-- Nút tròn chính -->
+            <div onclick="toggleContactMenu()" style="width: 50px; height: 50px; background: #8b5cf6; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25);" title="Contact Us">
+                <span style="font-size: 22px; color: white;">💬</span>
+            </div>
+        </div>
+
+        <!-- 2. NÚT ĐỔI TIỀN TỆ (Ở DƯỚI) -->
+        <div id="currency-widget-container" style="position: relative; display: flex; align-items: center;">
+            <!-- Menu con bung sang TRÁI -->
+            <div id="currency-submenu" style="display: none; position: absolute; right: 60px; background: white; padding: 6px 10px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; gap: 6px; align-items: center; white-space: nowrap;">
+                <span onclick="switchUserCurrency('VND'); toggleCurrencyMenu();" id="float-curr-vnd" style="cursor: pointer; padding: 6px 14px; border-radius: 20px; background: #0f172a; color: white; font-size: 12px; font-weight: bold;">VND</span>
+                <span onclick="switchUserCurrency('USD'); toggleCurrencyMenu();" id="float-curr-usd" style="cursor: pointer; padding: 6px 14px; border-radius: 20px; background: transparent; color: #64748b; font-size: 12px; font-weight: bold;">USD</span>
+            </div>
+            <!-- Nút tròn chính -->
+            <div onclick="toggleCurrencyMenu()" style="width: 50px; height: 50px; background: #0284c7; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25);" title="Change Currency">
+                <span style="font-size: 20px; color: white;">💱</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Hàm ẩn hiện menu Contact
+        function toggleContactMenu() {
+            const contactMenu = document.getElementById('contact-submenu');
+            const currMenu = document.getElementById('currency-submenu');
+            currMenu.style.display = 'none'; // Đóng menu đổi tiền lại nếu đang mở
+            contactMenu.style.display = (contactMenu.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        // Hàm ẩn hiện menu Đổi tiền tệ
+        function toggleCurrencyMenu() {
+            const currMenu = document.getElementById('currency-submenu');
+            const contactMenu = document.getElementById('contact-submenu');
+            contactMenu.style.display = 'none'; // Đóng menu contact lại nếu đang mở
+            currMenu.style.display = (currMenu.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        // Bổ sung đồng bộ màu sắc cho nút đổi tiền ở floating widget với thanh header
+        const originalSwitchUserCurrency = window.switchUserCurrency;
+        window.switchUserCurrency = function(unit) {
+            if (typeof originalSwitchUserCurrency === 'function') {
+                originalSwitchUserCurrency(unit);
+            }
+            // Cập nhật giao diện sáng/tối cho cả 2 nút VND / USD ở menu nổi
+            const fVnd = document.getElementById('float-curr-vnd');
+            const fUsd = document.getElementById('float-curr-usd');
+            if (fVnd && fUsd) {
+                if (unit === 'VND') {
+                    fVnd.style.background = '#0f172a'; fVnd.style.color = 'white';
+                    fUsd.style.background = 'transparent'; fUsd.style.color = '#64748b';
+                } else {
+                    fUsd.style.background = '#0f172a'; fUsd.style.color = 'white';
+                    fVnd.style.background = 'transparent'; fVnd.style.color = '#64748b';
+                }
+            }
+        };
+
+        // Click ra ngoài thì tự động ẩn các menu con
+        window.addEventListener('click', function(e) {
+            const contactContainer = document.getElementById('contact-widget-container');
+            const currencyContainer = document.getElementById('currency-widget-container');
+            if (contactContainer && !contactContainer.contains(e.target)) {
+                document.getElementById('contact-submenu').style.display = 'none';
+            }
+            if (currencyContainer && !currencyContainer.contains(e.target)) {
+                document.getElementById('currency-submenu').style.display = 'none';
+            }
+        });
+    </script>
+
 </body>
 </html>

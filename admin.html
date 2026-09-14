@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VST Admin Management Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f9; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* MÀN HÌNH CHẶN LOGIN */
+        #admin-lock-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 9999; }
+        #admin-lock-screen h2 { margin-bottom: 10px; }
+        #admin-lock-screen p { color: #94a3b8; font-size: 14px; margin-bottom: 25px; }
+        .btn-google { background: #ffffff; color: #1e293b; padding: 12px 24px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+        /* GIAO DIỆN CHÍNH ADMIN */
+        #admin-main-container { display: none; width: 100%; height: 100%; display: flex; }
+        .sidebar { width: 260px; background: #1e293b; color: white; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; flex-shrink: 0; }
+        .sidebar h2 { font-size: 18px; color: #38bdf8; margin-top: 0; margin-bottom: 30px; }
+        .sidebar a { color: #94a3b8; text-decoration: none; padding: 10px 15px; border-radius: 6px; margin-bottom: 8px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #334155; color: white; }
+        
+        .content-area { flex-grow: 1; padding: 25px; overflow-y: auto; background: #f8fafc; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* BUILDER STYLES */
+        .container { display: flex; gap: 20px; align-items: flex-start; }
+        .library { width: 380px; flex-shrink: 0; background: white; padding: 15px; border-radius: 8px; position: sticky; top: 0; max-height: 85vh; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .itinerary-wrapper { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
+        
+        .type-tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+        .type-tabs button { flex: 1; padding: 6px 10px; cursor: pointer; border: none; background: #f0f0f0; border-radius: 4px; font-weight: bold; font-size: 13px; color: #555;}
+        .type-tabs button.active-attraction { background: #2196f3; color: white; }
+        .type-tabs button.active-food { background: #ffc107; color: #333; }
+        .type-tabs button.active-activity { background: #4caf50; color: white; }
+
+        .region-cards { display: flex; gap: 10px; margin-bottom: 15px; }
+        .region-btn { flex: 1; padding: 10px 5px; text-align: center; background: #f8f9fa; border: 2px solid #eee; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #555; }
+        .region-btn.active { background: #333; color: white; border-color: #000; }
+        
+        .city-tabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .city-tabs button { padding: 5px 10px; cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 20px; font-size: 12px; }
+        .city-tabs button.active { background: #333; color: white; border-color: #000; }
+
+        .card-attraction { border-left: 5px solid #2196f3 !important; background: #e3f2fd !important; } 
+        .card-food { border-left: 5px solid #ffc107 !important; background: #fff8e1 !important; } 
+        .card-activity { border-left: 5px solid #4caf50 !important; background: #e8f5e9 !important; } 
+        .card-custom { border-left: 5px solid #9e9e9e !important; background: #fdfdfd !important; } 
+
+        .place-card { display: flex; gap: 10px; border: 1px solid #e0e0e0; padding: 10px; margin-bottom: 10px; border-radius: 6px; cursor: grab; background: #fff; }
+        .place-card img { width: 70px; height: 70px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+        .place-card .place-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; font-size: 11px; color: #777; margin-top: 2px; }
+        .place-info h4 { margin: 0 0 5px 0; font-size: 14px; }
+        .place-info p { margin: 0; font-size: 12px; color: #666; }
+
+        .flight-container { background: #ede7f6; border: 1px solid #d1c4e9; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .flight-container h4 { margin: 0 0 15px 0; color: #512da8; font-size: 16px; border-bottom: 1px dashed #b39ddb; padding-bottom: 5px; }
+        .flight-row { display: flex; gap: 15px; align-items: center; margin-bottom: 10px; }
+        .flight-row input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .flight-row label { font-size: 12px; color: #555; font-weight: bold; }
+
+        .add-day-btn { background: #fff; border: 2px dashed #2196f3; color: #2196f3; padding: 20px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        .add-day-btn:hover { background: #e3f2fd; }
+        .add-day-btn.faded { border-color: #ccc; color: #888; background: #fafafa; }
+
+        .day-block { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .day-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 15px; }
+        .day-header h3 { margin: 0; color: #333; }
+        .day-date-input { border: 1px solid #ccc; padding: 4px; border-radius: 4px; color: #555; }
+        
+        .dropzone { min-height: 80px; border: 2px dashed #ccc; border-radius: 6px; padding: 10px; background: #fafafa; }
+        .dropzone.dragover { background: #e3f2fd; border-color: #2196f3; }
+        
+        .timeline-item { margin-bottom: 10px; cursor: grab; }
+        .dropped-place { display: flex; gap: 10px; border: 1px solid #ddd; padding: 10px; border-radius: 6px; background: #fff; }
+        .time-badge { font-weight: bold; color: #d32f2f; font-size: 14px; margin-bottom: 5px;}
+        
+        .transit-module { background: #f8f9fa; border: 1px dashed #aaa; padding: 8px 15px; margin: 10px 0 10px 20px; border-radius: 4px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+        .btn-remove-transit { margin-left: auto; background: none; border: none; color: #c62828; cursor: pointer; font-size: 12px; font-weight: bold; }
+        
+        input[type="number"], input[type="time"] { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
+        .custom-inputs input[type="text"], .custom-inputs select { width: 100%; box-sizing: border-box; padding: 6px; margin-bottom: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;}
+        .btn-remove { margin-left: auto; background: #ffebee; color: #c62828; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 12px; height: fit-content;}
+        .btn-remove-day { background: #ffebee; color: #c62828; border: none; padding: 4px 8px; cursor: pointer; border-radius: 4px; font-size: 12px; font-weight: bold;}
+        .dragging { opacity: 0.5; }
+
+        /* Floating actions at bottom right: luôn có 2 nút Save Draft và Save as Template */
+        .floating-actions { position: fixed; bottom: 25px; right: 25px; display: flex; gap: 10px; z-index: 999; }
+        .floating-actions button { padding: 12px 20px; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-size: 14px; color: white; }
+        .btn-floating-save { background: #ff9800; }
+        .btn-floating-template { background: #ff5722; }
+    </style>
+</head>
+<body>
+
+    <!-- MÀN HÌNH CHẶN LOGIN -->
+    <div id="admin-lock-screen">
+        <h2>🛡️ VST Management Portal</h2>
+        <p>Restricted area. Please sign in with your authorized Google administrator account.</p>
+        <button class="btn-google" onclick="handleAdminLogin()">🔑 Sign in with Google Admin</button>
+    </div>
+
+    <!-- GIAO DIỆN CHÍNH ADMIN -->
+    <div id="admin-main-container">
+        <div class="sidebar">
+            <h2>VST Admin</h2>
+            <a onclick="switchTab('manage', this)" class="active">📂 Quản lý / Sửa / Xóa Mẫu</a>
+            <a onclick="switchTab('places', this)">📍 Quản lý Địa Điểm</a>
+            <a onclick="switchTab('customers', this)">👥 Thống kê Khách Hàng</a>
+            <a onclick="switchTab('requests', this)">📋 Yêu cầu Khách Hàng</a>
+            
+            <div style="margin-top: auto; border-top: 1px solid #334155; padding-top: 15px;">
+                <div style="margin-top: auto; border-top: 1px solid #334155; padding-top: 15px;">
+                    <div style="font-size: 12px; font-weight: bold; color: #38bdf8; margin-bottom: 5px;">📂 Bản nháp của tôi:</div>
+                    <div id="admin-drafts-list" style="max-height: 120px; overflow-y: auto; font-size: 12px; color: #cbd5e1; margin-bottom: 10px;">Đang tải nháp...</div>
+                    <span id="admin-email-display" style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 8px;"></span>
+                    <a onclick="handleAdminLogout()" style="color: #f87171; padding: 5px 0; cursor: pointer;">🚪 Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            
+            <!-- TAB 1: QUẢN LÝ / SỬA / XÓA MẪU (CHỨA NÚT TẠO MỚI) -->
+            <div id="panel-manage" class="panel active">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; color: #1e293b;">Quản lý Kho Lịch Trình Mẫu</h3>
+                        <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Danh sách các tour hiện có trên hệ thống. Bấm Edit để chỉnh sửa trực tiếp hoặc tạo mới.</p>
+                    </div>
+                    <button onclick="createNewSampleTemplate()" style="background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">➕ Tạo Tour Mẫu Mới</button>
+                </div>
+                <div id="admin-templates-list">Đang tải...</div>
+            </div>
+
+            <!-- TAB 2: BUILDER KÉO THẢ (DÙNG CHUNG KHI SỬA HOẶC TẠO MỚI) -->
+            <div id="panel-builder" class="panel">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <button onclick="switchTab('manage', document.querySelector('.sidebar a'))" style="background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">⬅️ Quay lại danh sách</button>
+                    <h3 id="builder-mode-title" style="margin: 0; color: #1e293b;">Trình Xây Dựng Tour Mẫu</h3>
+                </div>
+                <div class="container">
+                    <!-- CỘT THƯ VIỆN ĐỊA ĐIỂM -->
+                    <div class="library">
+                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #555;">Drag to add custom event:</div>
+                        <div class="custom-cards-container" style="margin-bottom: 20px;">
+                            <div class="blank-card" draggable="true" ondragstart="dragCustom(event)" style="padding: 12px; background: #f5f5f5; border: 2px dashed #9e9e9e; border-radius: 6px; text-align: center; cursor: grab; font-size: 14px; font-weight: bold; color: #555;">➕ Drag Blank Card</div>
+                        </div>
+                        <hr>
+
+                        <div class="type-tabs">
+                            <button onclick="setType('attraction')" class="active-attraction" id="btn-type-attraction">📍 Locations</button>
+                            <button onclick="setType('food')" id="btn-type-food">🍲 F&B</button>
+                            <button onclick="setType('activity')" id="btn-type-activity">🏄 Activities</button>
+                        </div>
+
+                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #555;">Select Region:</div>
+                        <div class="region-cards" id="region-tabs">
+                            <div class="region-btn active" onclick="setRegion('All')" id="btn-reg-All">All</div>
+                            <div class="region-btn" onclick="setRegion('North')" id="btn-reg-North">North</div>
+                            <div class="region-btn" onclick="setRegion('Central')" id="btn-reg-Central">Central</div>
+                            <div class="region-btn" onclick="setRegion('South')" id="btn-reg-South">South</div>
+                        </div>
+
+                        <div class="city-tabs" id="city-tabs-container"></div>
+                        <hr>
+                        <div id="place-list">Loading...</div>
+                    </div>
+
+                    <!-- BẢNG KÉO THẢ LỊCH TRÌNH -->
+                    <div class="itinerary-wrapper">
+                        <div id="arrival-flight-box"></div>
+                        <div id="itinerary-board" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                        <div id="departure-flight-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ĐỊA ĐIỂM -->
+            <div id="panel-places" class="panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; color: #1e293b;">Quản lý Kho Địa Điểm</h3>
+                        <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Thêm mới, chỉnh sửa thông tin hoặc xóa các điểm đến, nhà hàng, hoạt động.</p>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="downloadPlaceTemplate()" style="background: #475569; color: white; border: none; padding: 10px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">📥 Tải File Mẫu CSV</button>
+                        
+                        <label style="background: #0d9488; color: white; padding: 10px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-block; margin-bottom: 0;">
+                            📤 Import Hàng Loạt
+                            <input type="file" id="csv-file-input" accept=".csv" onchange="handleCSVUpload(event)" style="display: none;">
+                        </label>
+
+                        <button onclick="openPlaceModal()" style="background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">➕ Thêm Địa Điểm Mới</button>
+                    </div>
+                </div>
+                <!-- ➕ THANH LỌC TỈNH THÀNH (THÊM MỚI Ở ĐÂY) -->
+                <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;" id="admin-city-filter-container">
+                    <button onclick="filterAdminPlacesByCity('All')" class="admin-city-btn active" style="padding: 5px 12px; cursor: pointer; border: 1px solid #cbd5e1; background: #0f172a; color: white; border-radius: 20px; font-size: 12px; font-weight: bold;">Tất cả tỉnh thành</button>
+                </div>
+                <div id="admin-places-list">Đang tải danh sách địa điểm...</div>
+            </div>
+
+            <!-- TAB 4: KHÁCH HÀNG -->
+            <div id="panel-customers" class="panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; color: #1e293b;">Quản Lý Khách Hàng & Thống Kê Tương Tác</h3>
+                        <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Danh sách user, số lượng tour đã tạo và các điểm đến họ đang nhắm tới.</p>
+                    </div>
+                    <button onclick="loadAdminCustomers()" style="background: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">🔄 Làm mới data</button>
+                </div>
+
+                <!-- THẺ METRICS CARDS TỔNG QUAN -->
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; color: #64748b; font-weight: bold;">TỔNG SỐ KHÁCH HÀNG</div>
+                        <div id="metric-total-users" style="font-size: 22px; font-weight: bold; color: #0f172a; margin-top: 5px;">0</div>
+                    </div>
+                    <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; color: #64748b; font-weight: bold;">TỔNG TOUR / NHÁP ĐÃ TẠO</div>
+                        <div id="metric-total-tours" style="font-size: 22px; font-weight: bold; color: #0284c7; margin-top: 5px;">0</div>
+                    </div>
+                    <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; color: #64748b; font-weight: bold;">ĐANG ONLINE (REALTIME)</div>
+                        <div id="metric-online-users" style="font-size: 22px; font-weight: bold; color: #059669; margin-top: 5px;">1</div>
+                    </div>
+                </div>
+
+                <!-- Ô TÌM KIẾM NHANH -->
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="customer-search-input" placeholder="🔍 Tìm kiếm theo User ID / Email..." oninput="filterCustomers()" style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                </div>
+
+                <!-- BẢNG DANH SÁCH KHÁCH HÀNG -->
+                <div id="admin-customers-table-container">Đang tải dữ liệu...</div>
+            </div>
+
+            <!-- TAB 5: QUẢN LÝ YÊU CẦU HỖ TRỢ (THÊM MỚI Ở ĐÂY) -->
+            <div id="admin-requests-section" class="panel">
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top: 0; color: #0d47a1; margin-bottom: 15px;">Customer Support Requests</h3>
+                    
+                    <!-- BỘ LỌC (Filters) -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: #f8f9fa; padding: 12px; border-radius: 6px; align-items: center;">
+                        <div>
+                            <label style="font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 3px;">Type:</label>
+                            <select id="filter-req-type" onchange="filterRequests()" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+                                <option value="All">All Types</option>
+                                <option value="Flight & Ticket Booking">Flight & Ticket Booking</option>
+                                <option value="Tour Consultation">Tour Consultation</option>
+                                <option value="Location Information Support">Location Information Support</option>
+                                <option value="Other Requests">Other Requests</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 3px;">Status:</label>
+                            <select id="filter-req-status" onchange="filterRequests()" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+                                <option value="All">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 3px;">Time Range:</label>
+                            <select id="filter-req-time" onchange="filterRequests()" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;">
+                                <option value="All">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="7days">Past 7 Days</option>
+                                <option value="30days">Past 30 Days</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- DANH SÁCH YÊU CẦU (RENDER RA ĐÂY) -->
+                    <div id="admin-requests-list" style="display: flex; flex-direction: column; gap: 10px;">
+                        <p style="color: #777; font-size: 13px;">Loading requests...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING ACTION BUTTONS (Góc phải dưới: Save Draft & Save as Template) -->
+    <div class="floating-actions" id="floating-actions" style="display:none;">
+        <button class="btn-floating-save" onclick="saveToCloud()">☁️ Save Draft</button>
+        <button class="btn-floating-template" onclick="openSaveAsTemplateModal()">💾 Save Template</button>
+    </div>
+
+    <!-- MODAL NHẬP THÔNG TIN KHI SAVE AS TEMPLATE -->
+    <div id="save-template-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2500; justify-content: center; align-items: center;">
+        <div style="background: white; width: 450px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative;">
+            <button onclick="closeSaveAsTemplateModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+            <h3 style="margin-top: 0; color: #0d47a1; margin-bottom: 15px;">Lưu Lịch Trình Thành Mẫu</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Tên Lịch Trình *</label>
+                    <input type="text" id="tpl-title" placeholder="Ví dụ: Khám phá Hà Nội - Sapa 4D3N" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Thời lượng (Duration) *</label>
+                    <input type="text" id="tpl-duration" placeholder="Ví dụ: 4D3N, 1 Tuần..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Link Ảnh Bìa</label>
+                    <input type="text" id="tpl-image" placeholder="https://..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Mô tả ngắn</label>
+                    <textarea id="tpl-desc" placeholder="Tóm tắt chuyến đi..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; height: 60px;"></textarea>
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Tags (#địa điểm)</label>
+                    <input type="text" id="tpl-tags" placeholder="#Hanoi #Sapa #North" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <button onclick="confirmSaveAsTemplate()" style="background: #ff5722; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px;">Xuất bản Template</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL THÊM / SỬA ĐỊA ĐIỂM -->
+    <div id="place-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2500; justify-content: center; align-items: center;">
+        <div style="background: white; width: 500px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto;">
+            <button onclick="closePlaceModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+            <h3 id="place-modal-title" style="margin-top: 0; color: #0d47a1; margin-bottom: 15px;">Thêm Địa Điểm Mới</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Tên địa điểm *</label>
+                    <input type="text" id="plc-name" placeholder="Ví dụ: Cà phê Giảng" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #555;">Loại (Type)</label>
+                        <select id="plc-type" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="attraction">Location (Attraction)</option>
+                            <option value="food">Food & Drink</option>
+                            <option value="activity">Activity</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #555;">Miền (Region)</label>
+                        <select id="plc-region" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="North">North</option>
+                            <option value="Central">Central</option>
+                            <option value="South">South</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #555;">Thành phố (City)</label>
+                        <input type="text" id="plc-city" placeholder="Ví dụ: Hanoi" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #555;">Thời gian tham quan (phút)</label>
+                        <input type="number" id="plc-time" value="60" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Mức giá / Chi phí</label>
+                    <input type="text" id="plc-price" placeholder="Ví dụ: 30,000 VND" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Link Ảnh</label>
+                    <input type="text" id="plc-image" placeholder="https://..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Link Google Maps</label>
+                    <input type="text" id="plc-map" placeholder="https://maps.app.goo.gl/..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Mô tả ngắn</label>
+                    <textarea id="plc-desc" placeholder="Giới thiệu về địa điểm..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; height: 60px;"></textarea>
+                </div>
+                <button onclick="savePlaceData()" style="background: #0284c7; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px;">Lưu Địa Điểm</button>
+            </div>
+        </div>
+    </div>
+    <!-- MODAL XEM CHI TIẾT KHÁCH HÀNG (PROFILE + LỊCH TRÌNH) -->
+    <div id="customer-detail-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 4000; justify-content: center; align-items: center;">
+        <div style="background: white; width: 650px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; max-height: 85vh; overflow-y: auto;">
+            <button onclick="closeCustomerModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+            <h3 id="modal-customer-title" style="margin-top: 0; color: #0d47a1; margin-bottom: 15px;">Hồ Sơ & Lịch Trình Khách Hàng</h3>
+            
+            <!-- THÔNG TIN PROFILE -->
+            <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 13px; font-weight: bold; color: #334155; margin-bottom: 10px;">📋 Thông tin Profile cá nhân:</div>
+                <div id="modal-profile-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569;">
+                    <!-- Dữ liệu profile sẽ được inject vào đây -->
+                </div>
+            </div>
+
+            <!-- DANH SÁCH LỊCH TRÌNH -->
+            <div style="font-size: 13px; font-weight: bold; color: #334155; margin-bottom: 10px;">🗺️ Danh sách lịch trình đã tạo:</div>
+            <div id="modal-itineraries-content" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </div>
+    </div>
+
+    <!-- LOGIC SCRIPT CHO TRANG ADMIN -->
+    <script>
+        const SUPABASE_URL = 'https://znbsawlfrthwhchfetgv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnNhd2xmcnRod2hjaGZldGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5ODc4NzgsImV4cCI6MjEwMzU2Mzg3OH0.CiPtEJt0b0fd0W4ERzTobJl2VH3aJ6JHgEkhYFmuSog';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const ADMIN_EMAIL = "phong.neu60@gmail.com";
+        let currentUser = null;
+        let allPlaces = [];
+        let currentType = 'attraction';
+        let currentRegion = 'All';
+        let currentCity = 'All';
+        let dayCount = 0;
+        let currentTemplateId = null;
+        let currentItineraryId = null;
+
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            currentUser = session?.user || null;
+            const lockScreen = document.getElementById('admin-lock-screen');
+            const mainContainer = document.getElementById('admin-main-container');
+
+            if (currentUser && currentUser.email === ADMIN_EMAIL) {
+                lockScreen.style.display = 'none';
+                mainContainer.style.display = 'flex';
+                document.getElementById('admin-email-display').innerText = `Admin: ${currentUser.email}`;
+                fetchPlacesLibrary();
+                loadAdminTemplates();
+                loadAdminDraftsList();
+            } else if (currentUser) {
+                alert("Tài khoản này không có quyền quản trị viên!");
+                await supabaseClient.auth.signOut();
+                lockScreen.style.display = 'flex';
+                mainContainer.style.display = 'none';
+            } else {
+                lockScreen.style.display = 'flex';
+                mainContainer.style.display = 'none';
+            }
+        });
+
+        // --- HỆ THỐNG ĐẾM ONLINE REALTIME ---
+        function initOnlinePresence() {
+            if (typeof supabaseClient === 'undefined') return;
+
+            const onlineChannel = supabaseClient.channel('vst_online_users', {
+                config: {
+                    presence: {
+                        key: (typeof currentUser !== 'undefined' && currentUser && currentUser.email) 
+                            ? currentUser.email 
+                            : 'guest_' + Math.random().toString(36).substring(2, 7)
+                    }
+                }
+            });
+
+            onlineChannel.on('presence', { event: 'sync' }, () => {
+                const state = onlineChannel.presenceState();
+                let onlineCount = Object.keys(state).length;
+                
+                const onlineEl = document.getElementById('metric-online-users');
+                // Thêm dòng kiểm tra an toàn này để tránh văng lỗi khi đang ở các tab khác
+                if (!onlineEl) return; 
+                
+                onlineEl.innerText = onlineCount > 0 ? onlineCount : 1;
+            });
+
+            onlineChannel.subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await onlineChannel.track({ online_at: new Date().toISOString() });
+                }
+            });
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(initOnlinePresence, 1000);
+        });
+
+        async function handleAdminLogin() {
+            await supabaseClient.auth.signInWithOAuth({ provider: 'google' });
+        }
+
+        async function handleAdminLogout() {
+            await supabaseClient.auth.signOut();
+            location.reload();
+        }
+
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+            
+            // Xử lý riêng cho tab requests do dùng id khác tiền tố panel-
+            let targetPanel = tabName === 'requests' ? document.getElementById('admin-requests-section') : document.getElementById(`panel-${tabName}`);
+            if (targetPanel) targetPanel.classList.add('active');
+            
+            if(element) element.classList.add('active');
+            
+            const floatingActions = document.getElementById('floating-actions');
+            if (tabName === 'builder') {
+                floatingActions.style.display = 'flex';
+            } else {
+                floatingActions.style.display = 'none';
+                if (tabName === 'manage') loadAdminTemplates();
+                if (tabName === 'places') loadAdminPlaces();
+                if (tabName === 'customers') loadAdminCustomers();
+                if (tabName === 'requests') fetchCustomerRequests(); // Tự động tải data khi bấm sang tab requests
+            }
+        }
+
+        // --- FETCH ĐỊA ĐIỂM TỪ SUPABASE ---
+        async function fetchPlacesLibrary() {
+            const { data, error } = await supabaseClient.from('places').select('*');
+            if (error) {
+                console.error("Lỗi tải địa điểm từ Supabase:", error.message);
+                return;
+            }
+            // Chuẩn hóa dữ liệu ngay khi vừa tải về từ Cloud
+            allPlaces = (data || []).map(p => ({
+                ...p,
+                type: p.type ? p.type.toLowerCase().trim() : 'attraction',
+                region: p.region ? p.region.charAt(0).toUpperCase() + p.region.slice(1).toLowerCase().trim() : 'North'
+            }));
+            setRegion('All');
+        }
+
+        function setType(type) {
+            currentType = type;
+            document.getElementById('btn-type-attraction').className = type === 'attraction' ? 'active-attraction' : '';
+            document.getElementById('btn-type-food').className = type === 'food' ? 'active-food' : '';
+            document.getElementById('btn-type-activity').className = type === 'activity' ? 'active-activity' : '';
+            
+            // Thêm dòng này để khi đổi type, cụm nút thành phố tự động cập nhật đúng danh sách mới tinh
+            setRegion(currentRegion); 
+        }
+
+        function setRegion(region) {
+            currentRegion = region;
+            currentCity = 'All';
+            document.querySelectorAll('.region-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-reg-${region}`).classList.add('active');
+
+            let cities = region === 'All' 
+                ? [...new Set(allPlaces.filter(p => p.type === currentType).map(p => p.city))]
+                : [...new Set(allPlaces.filter(p => p.region === region && p.type === currentType).map(p => p.city))];
+
+            const cityContainer = document.getElementById('city-tabs-container');
+            cityContainer.innerHTML = `<button onclick="setCity('All')" class="active" id="btn-city-All">All Cities</button>`;
+            cities.forEach(city => {
+                if (city) {
+                    const cityId = city.replace(/\s+/g, '-');
+                    cityContainer.innerHTML += `<button onclick="setCity('${city}')" id="btn-city-${cityId}">${city}</button>`;
+                }
+            });
+            applyFilters();
+        }
+
+        function setCity(city) {
+            currentCity = city;
+            document.querySelectorAll('#city-tabs-container button').forEach(btn => btn.classList.remove('active'));
+            const cityId = city === 'All' ? 'All' : city.replace(/\s+/g, '-');
+            document.getElementById(`btn-city-${cityId}`).classList.add('active');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            let filtered = allPlaces.filter(p => p.type === currentType);
+            if (currentRegion !== 'All') filtered = filtered.filter(p => p.region === currentRegion);
+            if (currentCity !== 'All') filtered = filtered.filter(p => p.city === currentCity);
+            renderLibrary(filtered);
+        }
+
+        function renderLibrary(places) {
+            const list = document.getElementById('place-list');
+            list.innerHTML = '';
+            places.forEach(place => {
+                const card = document.createElement('div');
+                card.className = `place-card card-${place.type}`;
+                card.setAttribute('draggable', 'true');
+                card.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('application/json', JSON.stringify({ ...place, isCustom: false }));
+                });
+
+                let addressHtml = place.address ? `<p style="font-size: 11px; color: #555; margin: 2px 0;">📍 ${place.address}</p>` : '';
+                let mapButtonHtml = place.mapLink ? `<a href="${place.mapLink}" target="_blank" style="font-size: 11px; color: #2196f3; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 4px;">🗺️ Open in Google Maps</a>` : '';
+
+                card.innerHTML = `
+                    <img src="${place.image}" alt="">
+                    <div class="place-info">
+                        <h4>${place.name}</h4>
+                        ${addressHtml}
+                        ${mapButtonHtml}
+                        <p style="margin-top: 4px;">⏱️ ${place.timeToVisit} mins | 💰 ${place.price}</p>
+                        <p class="place-desc">${place.description}</p>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function dragCustom(e) {
+            e.dataTransfer.setData('application/json', JSON.stringify({ isCustom: true }));
+        }
+
+        // --- BUILDER LOGIC ---
+        function initBoard() {
+            const board = document.getElementById('itinerary-board');
+            board.innerHTML = `
+                <div class="add-day-btn" id="start-btn" onclick="addNewDay()">
+                    + Click to start building your itinerary
+                </div>
+            `;
+            renderArrivalFlight();
+            renderDepartureFlight();
+        }
+
+        function createNewSampleTemplate() {
+            currentTemplateId = null;
+            currentItineraryId = null;
+            dayCount = 0;
+            document.getElementById('builder-mode-title').innerText = "Tạo Tour Mẫu Mới";
+            initBoard();
+            switchTab('builder', null);
+        }
+
+        function renderArrivalFlight(data = null) {
+            const box = document.getElementById('arrival-flight-box');
+            box.innerHTML = `
+                <div class="flight-container">
+                    <h4>✈️ Arrival Flight (To Vietnam)</h4>
+                    <div class="flight-row">
+                        <label>From</label> <input type="text" class="arr-from" value="${data?.from || ''}" placeholder="SGN" style="width:60px; text-transform:uppercase;">
+                        <label>To</label> <input type="text" class="arr-to" value="${data?.to || ''}" placeholder="HAN" style="width:60px; text-transform:uppercase;">
+                        <label style="margin-left: 10px;">Date</label> <input type="date" class="arr-date" value="${data?.date || ''}">
+                    </div>
+                    <div class="flight-row">
+                        <label>Departure (24h)</label> <input type="time" class="arr-time" value="${data?.time || '08:00'}">
+                        <label style="margin-left: 10px;">Total Duration</label>
+                        <input type="number" class="arr-dur-hr" value="${data?.hr || '2'}" min="0" style="width:40px;"> <span style="font-size:12px;">hrs</span>
+                        <input type="number" class="arr-dur-min" value="${data?.min || '0'}" min="0" step="10" max="50" style="width:45px;"> <span style="font-size:12px;">mins</span>
+                    </div>
+                    <div class="flight-row">
+                        <label>Booking Ref</label> <input type="text" class="arr-pnr" value="${data?.pnr || ''}" placeholder="PNR" style="flex:1;">
+                        <label style="margin-left: 10px;">Note</label> <input type="text" class="arr-note" value="${data?.note || ''}" placeholder="Note..." style="flex:1;">
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDepartureFlight(data = null) {
+            const box = document.getElementById('departure-flight-box');
+            if (dayCount === 0) {
+                box.innerHTML = '';
+                return;
+            }
+            box.innerHTML = `
+                <div class="flight-container" style="background: #e8eaf6; border-color: #c5cae9;">
+                    <h4 style="color: #283593;">✈️ Departure Flight (Back Home - Day ${dayCount})</h4>
+                    <div class="flight-row">
+                        <label>From</label> <input type="text" class="dep-from" value="${data?.from || ''}" placeholder="HAN" style="width:60px; text-transform:uppercase;">
+                        <label>To</label> <input type="text" class="dep-to" value="${data?.to || ''}" placeholder="SGN" style="width:60px; text-transform:uppercase;">
+                        <label style="margin-left: 10px;">Date</label> <input type="date" class="dep-date" value="${data?.date || ''}">
+                    </div>
+                    <div class="flight-row">
+                        <label>Departure (24h)</label> <input type="time" class="dep-time" value="${data?.time || '18:00'}">
+                        <label style="margin-left: 10px;">Total Duration</label>
+                        <input type="number" class="dep-dur-hr" value="${data?.hr || '2'}" min="0" style="width:40px;"> <span style="font-size:12px;">hrs</span>
+                        <input type="number" class="dep-dur-min" value="${data?.min || '0'}" min="0" step="10" max="50" style="width:45px;"> <span style="font-size:12px;">mins</span>
+                    </div>
+                    <div class="flight-row">
+                        <label>Booking Ref</label> <input type="text" class="dep-pnr" value="${data?.pnr || ''}" placeholder="PNR" style="flex:1;">
+                        <label style="margin-left: 10px;">Note</label> <input type="text" class="dep-note" value="${data?.note || ''}" placeholder="Note..." style="flex:1;">
+                    </div>
+                </div>
+            `;
+        }
+
+        function addNewDay(dayDate = '', startTime = '08:00') {
+            dayCount++;
+            const board = document.getElementById('itinerary-board');
+            const startBtn = document.getElementById('start-btn');
+            if (startBtn) startBtn.remove(); 
+
+            let defaultDate = dayDate;
+            if (!defaultDate && dayCount > 1) {
+                const prevInput = document.querySelector(`#day-${dayCount - 1} .day-date-input`);
+                if (prevInput && prevInput.value) {
+                    const prevDate = new Date(prevInput.value);
+                    prevDate.setDate(prevDate.getDate() + 1);
+                    defaultDate = prevDate.toISOString().split('T')[0];
+                }
+            }
+
+            const dayId = `day-${dayCount}`;
+            let dayHtml = `
+                <div class="day-block" id="${dayId}">
+                    <div class="day-header">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <h3 class="day-title-text">Day ${dayCount}</h3>
+                            <input type="date" class="day-date-input" value="${defaultDate}" onchange="updateSubsequentDates(${dayCount})">
+                        </div>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <div style="font-size: 13px; font-weight: bold; color: #555;">
+                                Starts at: <input type="time" class="day-start-time" step="900" value="${startTime}" onchange="recalculateTime('${dayId}')">
+                            </div>
+                            <button class="btn-remove-day" onclick="removeDay('${dayId}')">🗑️ Remove Day</button>
+                        </div>
+                    </div>
+                    <div class="dropzone" id="drop-${dayId}"></div>
+                </div>
+            `;
+            
+            const addNextBtn = document.getElementById('add-next-day-btn');
+            if (addNextBtn) {
+                addNextBtn.insertAdjacentHTML('beforebegin', dayHtml);
+            } else {
+                board.innerHTML += dayHtml;
+                board.innerHTML += `
+                    <div class="add-day-btn faded" id="add-next-day-btn" onclick="addNewDay()">
+                        + Click to add next day
+                    </div>
+                `;
+            }
+
+            bindDropzoneEvents(document.getElementById(`drop-${dayId}`));
+            renderDepartureFlight();
+            return document.getElementById(`drop-${dayId}`);
+        }
+
+        function removeDay(dayId) {
+            const block = document.getElementById(dayId);
+            if(block) block.remove();
+
+            const allDays = document.querySelectorAll('.day-block');
+            dayCount = 0;
+            
+            let baseDateStr = null;
+            if(allDays.length > 0) {
+                const firstInput = allDays[0].querySelector('.day-date-input');
+                if(firstInput && firstInput.value) baseDateStr = firstInput.value;
+            }
+
+            allDays.forEach((d, index) => {
+                dayCount++;
+                const newId = `day-${dayCount}`;
+                d.id = newId;
+                d.querySelector('.day-title-text').innerText = `Day ${dayCount}`;
+                d.querySelector('.day-start-time').setAttribute('onchange', `recalculateTime('${newId}')`);
+                
+                const dropzone = d.querySelector('.dropzone');
+                dropzone.id = `drop-${newId}`;
+                
+                const dateInput = d.querySelector('.day-date-input');
+                if (baseDateStr) {
+                    let newDate = new Date(baseDateStr);
+                    newDate.setDate(newDate.getDate() + index);
+                    dateInput.value = newDate.toISOString().split('T')[0];
+                }
+                dateInput.setAttribute('onchange', `updateSubsequentDates(${dayCount})`);
+
+                d.querySelectorAll('.duration-input').forEach(inp => {
+                    inp.setAttribute('onchange', `recalculateTime('${newId}')`);
+                });
+                
+                recalculateTime(newId);
+            });
+
+            if (dayCount === 0) {
+                initBoard();
+            } else {
+                renderDepartureFlight();
+            }
+        }
+
+        function updateSubsequentDates(startDay) {
+            const startInput = document.querySelector(`#day-${startDay} .day-date-input`);
+            if (!startInput || !startInput.value) return;
+            let currentDate = new Date(startInput.value);
+            for (let i = startDay + 1; i <= dayCount; i++) {
+                currentDate.setDate(currentDate.getDate() + 1);
+                const nextInput = document.querySelector(`#day-${i} .day-date-input`);
+                if (nextInput) nextInput.value = currentDate.toISOString().split('T')[0];
+            }
+        }
+
+        let draggedInternalItem = null;
+        function handleDragStart(e, item) { draggedInternalItem = item; setTimeout(() => item.classList.add('dragging'), 0); }
+        function handleDragEnd(e, item) {
+            item.classList.remove('dragging');
+            draggedInternalItem = null;
+            const dropzone = item.closest('.dropzone');
+            if (dropzone) { cleanupTransits(dropzone); recalculateTime(dropzone.closest('.day-block').id); }
+        }
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.place-item, .custom-item')].filter(el => el !== draggedInternalItem);
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                else return closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function bindDropzoneEvents(zone) {
+            zone.addEventListener('dragover', e => { 
+                e.preventDefault(); zone.classList.add('dragover'); 
+                if (draggedInternalItem) {
+                    const afterElement = getDragAfterElement(zone, e.clientY);
+                    if (afterElement == null) zone.appendChild(draggedInternalItem);
+                    else zone.insertBefore(draggedInternalItem, afterElement);
+                }
+            });
+            zone.addEventListener('dragleave', e => zone.classList.remove('dragover'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault(); zone.classList.remove('dragover');
+                if (draggedInternalItem) return; 
+                const dataStr = e.dataTransfer.getData('application/json');
+                if (dataStr) addPlaceToDay(zone, JSON.parse(dataStr), zone.closest('.day-block').id);
+            });
+        }
+
+        const transitTemplate = `
+            <div class="timeline-item transit-item">
+                <div class="transit-module">
+                    🚕 <select class="transit-method" onchange="recalculateTime(this.closest('.day-block').id)">
+                        <option>Taxi / Grab</option>
+                        <option>Bus / Public Transport</option>
+                        <option>Walk</option>
+                    </select>
+                    <input type="number" class="transit-minutes" value="30" step="15" onchange="recalculateTime(this.closest('.day-block').id)"> mins
+                    <button class="btn-remove-transit" onclick="removeTransit(this)">Remove</button>
+                </div>
+            </div>
+        `;
+
+        function removeTransit(btn) {
+            const dayId = btn.closest('.day-block').id;
+            btn.closest('.transit-item').remove();
+            recalculateTime(dayId);
+        }
+
+        function addPlaceToDay(dropzone, placeData, dayId) {
+            const wrapper = document.createElement('div');
+            
+            if (placeData.isTransit) {
+                wrapper.className = 'timeline-item transit-item';
+                wrapper.innerHTML = `
+                    <div class="transit-module">
+                        🚕 <select class="transit-method" onchange="recalculateTime(this.closest('.day-block').id)">
+                            <option ${placeData.method === 'Taxi / Grab' ? 'selected' : ''}>Taxi / Grab</option>
+                            <option ${placeData.method === 'Bus / Public Transport' ? 'selected' : ''}>Bus / Public Transport</option>
+                            <option ${placeData.method === 'Walk' ? 'selected' : ''}>Walk</option>
+                        </select>
+                        <input type="number" class="transit-minutes" value="${placeData.minutes || 30}" step="15" onchange="recalculateTime(this.closest('.day-block').id)"> mins
+                        <button class="btn-remove-transit" onclick="removeTransit(this)">Remove</button>
+                    </div>
+                `;
+                dropzone.appendChild(wrapper);
+                return;
+            }
+
+            const colorClass = placeData.isCustom ? 'card-custom' : `card-${placeData.type}`;
+            wrapper.className = placeData.isCustom ? 'timeline-item custom-item' : 'timeline-item place-item';
+            wrapper.setAttribute('draggable', 'true');
+            wrapper.addEventListener('dragstart', (e) => handleDragStart(e, wrapper));
+            wrapper.addEventListener('dragend', (e) => handleDragEnd(e, wrapper));
+
+            if (placeData.isCustom) {
+                wrapper.innerHTML = `
+                    <div class="dropped-place ${colorClass}">
+                        <div style="flex-grow: 1;">
+                            <div class="time-badge">00:00 - 00:00</div>
+                            <div class="custom-inputs">
+                                <select class="custom-type" style="font-weight:bold;">
+                                    <option ${placeData.customType?.includes('Accommodation') ? 'selected' : ''}>🏨 Accommodation</option>
+                                    <option ${placeData.customType?.includes('Food') ? 'selected' : ''}>🍽️ Food & Drink</option>
+                                    <option ${placeData.customType?.includes('Transport') ? 'selected' : ''}>🚙 Transport (Long distance / Car)</option>
+                                    <option ${placeData.customType?.includes('Activity') ? 'selected' : ''}>🎯 Activity/Destination</option>
+                                </select>
+                                <input type="text" class="custom-title" value="${placeData.title || ''}" placeholder="Title...">
+                                <div style="margin-bottom: 5px;">
+                                    <label style="font-size: 12px; cursor: pointer;">
+                                        <input type="checkbox" class="overnight-check" ${placeData.isOvernight ? 'checked' : ''} onchange="toggleOvernight(this); recalculateTime('${dayId}')"> 
+                                        🌙 Overnight stay / No duration
+                                    </label>
+                                </div>
+                                <div class="duration-wrapper" style="display:${placeData.isOvernight ? 'none' : 'flex'}; gap:10px; align-items:center; margin-bottom:5px;">
+                                    <label style="font-size:12px;">Duration:</label>
+                                    <input type="number" class="duration-input" value="${placeData.duration || 60}" step="15" onchange="recalculateTime('${dayId}')" style="width:70px;"> mins
+                                </div>
+                                <input type="text" class="custom-price" value="${placeData.price || ''}" placeholder="Price">
+                                <input type="text" class="custom-link" value="${placeData.mapLink || ''}" placeholder="Map Link">
+                                <input type="text" class="custom-note" value="${placeData.note || ''}" placeholder="Personal Notes">
+                            </div>
+                        </div>
+                        <button class="btn-remove" onclick="removeItem(this)">Remove</button>
+                    </div>
+                `;
+            } else {
+                wrapper.setAttribute('data-city', placeData.city || '');
+                wrapper.innerHTML = `
+                    <div class="dropped-place ${colorClass}">
+                        <div style="flex-grow: 1;">
+                            <div class="time-badge">00:00 - 00:00</div>
+                            <h4 class="place-title">${placeData.name}</h4>
+                            <div style="display:flex; align-items:center; gap:5px; margin-top:8px;">
+                                <label style="font-size:12px; color:#555;">Duration:</label>
+                                <input type="number" class="duration-input" value="${placeData.timeToVisit || 60}" step="15" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
+                                <span style="font-size:12px; color:#555;">mins</span>
+                                <span class="place-price" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${placeData.price || ''}</span>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <input type="text" class="item-note" value="${placeData.note || ''}" placeholder="Personal Note" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                        </div>
+                        <button class="btn-remove" onclick="removeItem(this)">Remove</button>
+                    </div>
+                `;
+            }
+
+            dropzone.appendChild(wrapper);
+            cleanupTransits(dropzone);
+            recalculateTime(dayId);
+        }
+
+        function toggleOvernight(checkbox) {
+            const durationWrapper = checkbox.closest('.custom-inputs').querySelector('.duration-wrapper');
+            durationWrapper.style.display = checkbox.checked ? 'none' : 'flex';
+        }
+
+        function removeItem(btn) {
+            const dayId = btn.closest('.day-block').id;
+            const dropzone = btn.closest('.dropzone');
+            btn.closest('.timeline-item').remove();
+            cleanupTransits(dropzone); 
+            recalculateTime(dayId);
+        }
+
+        function cleanupTransits(dropzone) {
+            const children = Array.from(dropzone.children);
+            let lastWasPlace = false;
+            children.forEach(child => {
+                if (child.classList.contains('place-item') || child.classList.contains('custom-item')) {
+                    if (lastWasPlace) {
+                        const prev = child.previousElementSibling;
+                        if (!prev || !prev.classList.contains('transit-item')) {
+                            child.insertAdjacentHTML('beforebegin', transitTemplate);
+                        }
+                    }
+                    lastWasPlace = true;
+                } else if (child.classList.contains('transit-item')) {
+                    if (!lastWasPlace) child.remove(); 
+                    else lastWasPlace = false; 
+                }
+            });
+            if (dropzone.lastElementChild && dropzone.lastElementChild.classList.contains('transit-item')) {
+                dropzone.lastElementChild.remove();
+            }
+        }
+
+        function recalculateTime(dayId) {
+            const dayBlock = document.getElementById(dayId);
+            if(!dayBlock) return;
+            const startTimeInput = dayBlock.querySelector('.day-start-time').value; 
+            let [hours, mins] = startTimeInput.split(':').map(Number);
+            let currentTotalMinutes = (hours * 60) + mins;
+
+            const items = dayBlock.querySelectorAll('.timeline-item');
+            items.forEach(item => {
+                if (item.classList.contains('place-item') || item.classList.contains('custom-item')) {
+                    let startH = String(Math.floor(currentTotalMinutes / 60)).padStart(2, '0');
+                    let startM = String(currentTotalMinutes % 60).padStart(2, '0');
+                    
+                    const overnightCheck = item.querySelector('.overnight-check');
+                    const isOvernight = overnightCheck && overnightCheck.checked;
+
+                    if (isOvernight) {
+                        item.querySelector('.time-badge').innerText = `${startH}:${startM} - Overnight 🌙`;
+                    } else {
+                        const durationInput = item.querySelector('.duration-input');
+                        const duration = durationInput ? parseInt(durationInput.value) || 0 : 0;
+                        currentTotalMinutes += duration;
+
+                        let endH = String(Math.floor(currentTotalMinutes / 60)).padStart(2, '0');
+                        let endM = String(currentTotalMinutes % 60).padStart(2, '0');
+                        item.querySelector('.time-badge').innerText = `${startH}:${startM} - ${endH}:${endM}`;
+                    }
+                } 
+                else if (item.classList.contains('transit-item')) {
+                    const transitTime = parseInt(item.querySelector('.transit-minutes').value) || 0;
+                    currentTotalMinutes += transitTime;
+                }
+            });
+        }
+
+        // --- LOAD DRAFT & TEMPLATES ---
+        async function loadAdminDraftsList() {
+            if (!currentUser) return;
+            const container = document.getElementById('admin-drafts-list');
+            const { data, error } = await supabaseClient.from('itineraries').select('id, title, updated_at').eq('user_id', currentUser.id).order('updated_at', { ascending: false });
+            
+            if (error || !data || data.length === 0) {
+                container.innerHTML = "Chưa có bản nháp nào";
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(draft => {
+                container.innerHTML += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #334155; padding: 5px 8px; border-radius: 4px; margin-bottom: 4px;">
+                        <span onclick="openSpecificDraft('${draft.id}')" style="cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; color: #38bdf8;" title="${draft.title}">${draft.title}</span>
+                        <button onclick="deleteDraft('${draft.id}')" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:10px;">✕</button>
+                    </div>
+                `;
+            });
+        }
+
+        // Mở một bản nháp cụ thể khi bấm vào tên
+        async function openSpecificDraft(id) {
+            const { data, error } = await supabaseClient.from('itineraries').select('*').eq('id', id).single();
+            if (error || !data) {
+                alert("Không tìm thấy bản nháp!");
+                return;
+            }
+
+            currentItineraryId = data.id;
+            currentTemplateId = null;
+            document.getElementById('builder-mode-title').innerText = `Tiếp tục bản nháp: ${data.title}`;
+
+            dayCount = 0;
+            const board = document.getElementById('itinerary-board');
+            board.innerHTML = '';
+
+            const payload = data.data_json || {};
+            renderArrivalFlight(payload.arrival);
+
+            if (payload.days && payload.days.length > 0) {
+                payload.days.forEach(dayInfo => {
+                    const dropzone = addNewDay(dayInfo.date, dayInfo.startTime);
+                    if (dayInfo.items && dayInfo.items.length > 0) {
+                        dayInfo.items.forEach(item => {
+                            addPlaceToDay(dropzone, item, `day-${dayCount}`);
+                        });
+                    }
+                });
+            } else {
+                initBoard();
+            }
+
+            renderDepartureFlight(payload.departure);
+            switchTab('builder', null);
+        }
+
+        // Xóa bản nháp
+        async function deleteDraft(id) {
+            if (!confirm("Xóa bản nháp này?")) return;
+            await supabaseClient.from('itineraries').delete().eq('id', id);
+            if (currentItineraryId === id) currentItineraryId = null;
+            loadAdminDraftsList();
+        }
+
+        async function saveToCloud() {
+            if (!currentUser) return;
+            
+            // Yêu cầu nhập tên bản nháp để phân biệt
+            let defaultName = document.getElementById('builder-mode-title').innerText.replace('Tiếp tục bản nháp: ', '').replace('Trình Xây Dựng Tour Mẫu', 'Nháp mới');
+            let draftTitle = prompt("Nhập tên cho bản nháp này:", defaultName !== 'Nháp mới' ? defaultName : `Nháp ngày ${new Date().toLocaleDateString()}`);
+            if (!draftTitle) return;
+
+            let daysData = [];
+            document.querySelectorAll('.day-block').forEach(dayBlock => {
+                let dateVal = dayBlock.querySelector('.day-date-input')?.value || '';
+                let timeVal = dayBlock.querySelector('.day-start-time')?.value || '08:00';
+                
+                let itemsData = [];
+                dayBlock.querySelectorAll('.timeline-item').forEach(item => {
+                    if (item.classList.contains('place-item')) {
+                        let placeType = 'attraction';
+                        let droppedPlaceDiv = item.querySelector('.dropped-place');
+                        if (droppedPlaceDiv) {
+                            if (droppedPlaceDiv.classList.contains('card-food')) placeType = 'food';
+                            else if (droppedPlaceDiv.classList.contains('card-activity')) placeType = 'activity';
+                        }
+                        itemsData.push({
+                            isCustom: false,
+                            city: item.getAttribute('data-city') || '',
+                            name: item.querySelector('.place-title')?.innerText || '',
+                            timeToVisit: item.querySelector('.duration-input')?.value || 60,
+                            price: '', description: '',
+                            note: item.querySelector('.item-note')?.value || '',
+                            type: placeType
+                        });
+                    } else if (item.classList.contains('custom-item')) {
+                        itemsData.push({
+                            isCustom: true,
+                            customType: item.querySelector('.custom-type')?.value || '',
+                            title: item.querySelector('.custom-title')?.value || '',
+                            isOvernight: item.querySelector('.overnight-check')?.checked || false,
+                            duration: item.querySelector('.duration-input')?.value || 60,
+                            price: item.querySelector('.custom-price')?.value || '',
+                            mapLink: item.querySelector('.custom-link')?.value || '',
+                            note: item.querySelector('.custom-note')?.value || ''
+                        });
+                    } else if (item.classList.contains('transit-item')) {
+                        itemsData.push({
+                            isTransit: true,
+                            method: item.querySelector('.transit-method')?.value || '',
+                            minutes: item.querySelector('.transit-minutes')?.value || 30
+                        });
+                    }
+                });
+                daysData.push({ date: dateVal, startTime: timeVal, items: itemsData });
+            });
+
+            const payload = {
+                dayCount: dayCount,
+                arrival: {
+                    from: document.querySelector('.arr-from')?.value || '',
+                    to: document.querySelector('.arr-to')?.value || '',
+                    date: document.querySelector('.arr-date')?.value || '',
+                    time: document.querySelector('.arr-time')?.value || '',
+                    hr: document.querySelector('.arr-dur-hr')?.value || '',
+                    min: document.querySelector('.arr-dur-min')?.value || '',
+                    pnr: document.querySelector('.arr-pnr')?.value || '',
+                    note: document.querySelector('.arr-note')?.value || ''
+                },
+                departure: {
+                    from: document.querySelector('.dep-from')?.value || '',
+                    to: document.querySelector('.dep-to')?.value || '',
+                    date: document.querySelector('.dep-date')?.value || '',
+                    time: document.querySelector('.dep-time')?.value || '',
+                    hr: document.querySelector('.dep-dur-hr')?.value || '',
+                    min: document.querySelector('.dep-dur-min')?.value || '',
+                    pnr: document.querySelector('.dep-pnr')?.value || '',
+                    note: document.querySelector('.dep-note')?.value || ''
+                },
+                days: daysData
+            };
+
+            let queryData = { user_id: currentUser.id, title: draftTitle, data_json: payload, updated_at: new Date() };
+
+            let res;
+            if (currentItineraryId) {
+                // Nếu đang mở sẵn 1 draft cũ thì update đè
+                res = await supabaseClient.from('itineraries').update(queryData).eq('id', currentItineraryId);
+            } else {
+                // Nếu tạo mới tinh thì insert bản ghi mới hoàn toàn
+                res = await supabaseClient.from('itineraries').insert([queryData]).select();
+                if (res.data && res.data.length > 0) currentItineraryId = res.data[0].id;
+            }
+
+            if (res.error) alert("Lỗi lưu nháp: " + res.error.message);
+            else {
+                alert("☁️ Đã lưu bản nháp thành công!");
+                loadAdminDraftsList();
+            }
+        }
+
+        function openSaveAsTemplateModal() {
+            if (dayCount === 0) { alert("Vui lòng thêm ít nhất 1 ngày lịch trình trước khi lưu mẫu!"); return; }
+            document.getElementById('save-template-modal').style.display = 'flex';
+        }
+
+        function closeSaveAsTemplateModal() {
+            document.getElementById('save-template-modal').style.display = 'none';
+        }
+
+        async function confirmSaveAsTemplate() {
+            let title = document.getElementById('tpl-title').value.trim();
+            let duration = document.getElementById('tpl-duration').value.trim();
+            let image = document.getElementById('tpl-image').value.trim();
+            let description = document.getElementById('tpl-desc').value.trim();
+            let tags = document.getElementById('tpl-tags').value.trim();
+
+            if (!title || !duration) { alert("Vui lòng nhập Tên và Thời lượng tour!"); return; }
+
+            let daysData = [];
+            document.querySelectorAll('.day-block').forEach(dayBlock => {
+                let dateVal = dayBlock.querySelector('.day-date-input')?.value || '';
+                let timeVal = dayBlock.querySelector('.day-start-time')?.value || '08:00';
+                
+                let itemsData = [];
+                dayBlock.querySelectorAll('.timeline-item').forEach(item => {
+                    if (item.classList.contains('place-item')) {
+                        let placeType = 'attraction';
+                        let droppedPlaceDiv = item.querySelector('.dropped-place');
+                        if (droppedPlaceDiv) {
+                            if (droppedPlaceDiv.classList.contains('card-food')) placeType = 'food';
+                            else if (droppedPlaceDiv.classList.contains('card-activity')) placeType = 'activity';
+                        }
+                        itemsData.push({
+                            isCustom: false,
+                            city: item.getAttribute('data-city') || '',
+                            name: item.querySelector('.place-title')?.innerText || '',
+                            timeToVisit: item.querySelector('.duration-input')?.value || 60,
+                            price: '', description: '',
+                            note: item.querySelector('.item-note')?.value || '',
+                            type: placeType
+                        });
+                    } else if (item.classList.contains('custom-item')) {
+                        itemsData.push({
+                            isCustom: true,
+                            customType: item.querySelector('.custom-type')?.value || '',
+                            title: item.querySelector('.custom-title')?.value || '',
+                            isOvernight: item.querySelector('.overnight-check')?.checked || false,
+                            duration: item.querySelector('.duration-input')?.value || 60,
+                            price: item.querySelector('.custom-price')?.value || '',
+                            mapLink: item.querySelector('.custom-link')?.value || '',
+                            note: item.querySelector('.custom-note')?.value || ''
+                        });
+                    } else if (item.classList.contains('transit-item')) {
+                        itemsData.push({
+                            isTransit: true,
+                            method: item.querySelector('.transit-method')?.value || '',
+                            minutes: item.querySelector('.transit-minutes')?.value || 30
+                        });
+                    }
+                });
+                daysData.push({ date: dateVal, startTime: timeVal, items: itemsData });
+            });
+
+            const payload = {
+                dayCount: dayCount,
+                arrival: {
+                    from: document.querySelector('.arr-from')?.value || '',
+                    to: document.querySelector('.arr-to')?.value || '',
+                    date: document.querySelector('.arr-date')?.value || '',
+                    time: document.querySelector('.arr-time')?.value || '',
+                    hr: document.querySelector('.arr-dur-hr')?.value || '',
+                    min: document.querySelector('.arr-dur-min')?.value || '',
+                    pnr: document.querySelector('.arr-pnr')?.value || '',
+                    note: document.querySelector('.arr-note')?.value || ''
+                },
+                departure: {
+                    from: document.querySelector('.dep-from')?.value || '',
+                    to: document.querySelector('.dep-to')?.value || '',
+                    date: document.querySelector('.dep-date')?.value || '',
+                    time: document.querySelector('.dep-time')?.value || '',
+                    hr: document.querySelector('.dep-dur-hr')?.value || '',
+                    min: document.querySelector('.dep-dur-min')?.value || '',
+                    pnr: document.querySelector('.dep-pnr')?.value || '',
+                    note: document.querySelector('.dep-note')?.value || ''
+                },
+                days: daysData
+            };
+
+            const record = { title, duration, image_url: image, description, tags, data_json: payload, updated_at: new Date() };
+
+            let res;
+            if (currentTemplateId) {
+                res = await supabaseClient.from('itinerary_templates').update(record).eq('id', currentTemplateId);
+            } else {
+                res = await supabaseClient.from('itinerary_templates').insert([record]);
+            }
+
+            if (res.error) alert("Lỗi: " + res.error.message);
+            else {
+                alert("✨ Lưu template thành công!");
+                closeSaveAsTemplateModal();
+                switchTab('manage', document.querySelector('.sidebar a'));
+                loadAdminTemplates();
+            }
+        }
+
+        async function loadAdminTemplates() {
+            const container = document.getElementById('admin-templates-list');
+            container.innerHTML = "Đang tải danh sách...";
+            const { data, error } = await supabaseClient.from('itinerary_templates').select('*').order('id', { ascending: false });
+            
+            if (error || !data || data.length === 0) {
+                container.innerHTML = "<p>Chưa có template mẫu nào.</p>";
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(tpl => {
+                container.innerHTML += `
+                    <div style="background:white; border:1px solid #cbd5e1; padding:12px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <div>
+                            <strong>${tpl.title}</strong> <span style="background:#0284c7; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">${tpl.duration}</span>
+                            <div style="font-size:11px; color:#64748b; margin-top:2px;">Tags: ${tpl.tags || 'Không có'}</div>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="editTemplate('${tpl.id}')" style="background:#0284c7; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Edit</button>
+                            <button onclick="deleteTemplate('${tpl.id}')" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Xóa</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function deleteTemplate(id) {
+            if (!confirm("Xóa template này?")) return;
+            await supabaseClient.from('itinerary_templates').delete().eq('id', id);
+            loadAdminTemplates();
+        }
+
+        async function editTemplate(id) {
+            const { data } = await supabaseClient.from('itinerary_templates').select('*').eq('id', id).single();
+            if (!data) return;
+            currentTemplateId = data.id;
+            
+            document.getElementById('tpl-title').value = data.title;
+            document.getElementById('tpl-duration').value = data.duration;
+            document.getElementById('tpl-image').value = data.image_url || '';
+            document.getElementById('tpl-desc').value = data.description || '';
+            document.getElementById('tpl-tags').value = data.tags || '';
+            document.getElementById('builder-mode-title').innerText = `Sửa Tour Mẫu: ${data.title}`;
+
+            // Load dữ liệu JSON vào builder
+            dayCount = 0;
+            const board = document.getElementById('itinerary-board');
+            board.innerHTML = '';
+
+            const payload = data.data_json || {};
+            renderArrivalFlight(payload.arrival);
+
+            if (payload.days && payload.days.length > 0) {
+                payload.days.forEach(dayInfo => {
+                    const dropzone = addNewDay(dayInfo.date, dayInfo.startTime);
+                    if (dayInfo.items && dayInfo.items.length > 0) {
+                        dayInfo.items.forEach(item => {
+                            addPlaceToDay(dropzone, item, `day-${dayCount}`);
+                        });
+                    }
+                });
+            } else {
+                initBoard();
+            }
+
+            renderDepartureFlight(payload.departure);
+            switchTab('builder', null);
+        }
+        // Hàm load ngược bản nháp gần nhất vào Builder khi bấm vào ô Draft ở sidebar
+        async function loadDraftIntoBuilder() {
+            if (!currentUser || !currentItineraryId) {
+                alert("Không tìm thấy bản nháp nào để mở!");
+                return;
+            }
+
+            const { data, error } = await supabaseClient.from('itineraries').select('*').eq('id', currentItineraryId).single();
+            if (error || !data) {
+                alert("Lỗi tải bản nháp!");
+                return;
+            }
+
+            currentTemplateId = null; // Đang làm việc với dạng draft cá nhân
+            document.getElementById('builder-mode-title').innerText = `Tiếp tục bản nháp: ${data.title}`;
+
+            // Load dữ liệu JSON vào builder y hệt logic edit template
+            dayCount = 0;
+            const board = document.getElementById('itinerary-board');
+            board.innerHTML = '';
+
+            const payload = data.data_json || {};
+            renderArrivalFlight(payload.arrival);
+
+            if (payload.days && payload.days.length > 0) {
+                payload.days.forEach(dayInfo => {
+                    const dropzone = addNewDay(dayInfo.date, dayInfo.startTime);
+                    if (dayInfo.items && dayInfo.items.length > 0) {
+                        dayInfo.items.forEach(item => {
+                            addPlaceToDay(dropzone, item, `day-${dayCount}`);
+                        });
+                    }
+                });
+            } else {
+                initBoard();
+            }
+
+            renderDepartureFlight(payload.departure);
+            switchTab('builder', null);
+            alert("✨ Đã tải thành công bản nháp vào Builder!");
+        }
+
+        let currentEditingPlaceId = null;
+
+        // Gọi khi chuyển sang tab Địa điểm
+        function loadAdminPlaces() {
+            const container = document.getElementById('admin-places-list');
+            container.innerHTML = "Đang tải danh sách địa điểm...";
+
+            // Nếu mày lưu bảng địa điểm trên Supabase (tên bảng là 'places'):
+            supabaseClient.from('places').select('*').order('id', { ascending: false }).then(({ data, error }) => {
+                if (error) {
+                    // Fallback nếu chưa tạo bảng places trên Supabase thì dùng mảng allPlaces đang fetch từ Google Sheets
+                    renderPlacesTable(allPlaces);
+                    return;
+                }
+                renderPlacesTable(data);
+            });
+        }
+
+        function renderPlacesTable(places) {
+            const container = document.getElementById('admin-places-list');
+            if (!places || places.length === 0) {
+                container.innerHTML = "<p>Chưa có địa điểm nào.</p>";
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+            `;
+            places.forEach((p, index) => {
+                let pId = p.id || index;
+                container.innerHTML += `
+                    <div style="background: white; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <img src="${p.image || ''}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/50'">
+                            <div>
+                                <strong>${p.name}</strong> <span style="background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 11px;">${p.city} (${p.region})</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Type: ${p.type} | Time: ${p.timeToVisit}m | Price: ${p.price || 'Free'}</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick='openPlaceModal(${JSON.stringify(p)})' style="background: #0284c7; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
+                            <button onclick="deletePlace('${pId}')" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Xóa</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML += `</div>`;
+        }
+
+        function openPlaceModal(place = null) {
+            currentEditingPlaceId = place ? (place.id || null) : null;
+            document.getElementById('place-modal-title').innerText = place ? "Chỉnh sửa Địa Điểm" : "Thêm Địa Điểm Mới";
+            
+            document.getElementById('plc-name').value = place ? place.name : '';
+            document.getElementById('plc-type').value = place ? place.type : 'attraction';
+            document.getElementById('plc-region').value = place ? place.region : 'North';
+            document.getElementById('plc-city').value = place ? place.city : '';
+            document.getElementById('plc-time').value = place ? place.timeToVisit : 60;
+            document.getElementById('plc-price').value = place ? place.price : '';
+            document.getElementById('plc-image').value = place ? place.image : '';
+            document.getElementById('plc-map').value = place ? place.mapLink : '';
+            document.getElementById('plc-desc').value = place ? place.description : '';
+
+            document.getElementById('place-modal').style.display = 'flex';
+        }
+
+        function closePlaceModal() {
+            document.getElementById('place-modal').style.display = 'none';
+        }
+
+        async function savePlaceData() {
+            const name = document.getElementById('plc-name').value.trim();
+            if (!name) { alert("Vui lòng nhập tên địa điểm!"); return; }
+
+            const placeRecord = {
+                name: name,
+                type: document.getElementById('plc-type').value,
+                region: document.getElementById('plc-region').value,
+                city: document.getElementById('plc-city').value.trim(),
+                timeToVisit: parseInt(document.getElementById('plc-time').value) || 60,
+                price: document.getElementById('plc-price').value.trim(),
+                image: document.getElementById('plc-image').value.trim(),
+                mapLink: document.getElementById('plc-map').value.trim(),
+                description: document.getElementById('plc-desc').value.trim()
+            };
+
+            let res;
+            if (currentEditingPlaceId) {
+                // Đang sửa: giữ nguyên id cũ
+                res = await supabaseClient.from('places').update(placeRecord).eq('id', currentEditingPlaceId);
+            } else {
+                // Thêm mới: bỏ qua id, để Supabase tự tăng 1, 2, 3...
+                res = await supabaseClient.from('places').insert([placeRecord]);
+            }
+
+            if (res.error) {
+                alert("Lỗi lưu địa điểm: " + res.error.message);
+            } else {
+                alert("✨ Lưu địa điểm thành công!");
+                closePlaceModal();
+                loadAdminPlaces();
+                fetchPlacesLibrary();
+            }
+        }
+
+        async function deletePlace(id) {
+            if (!confirm("Bạn có chắc chắn muốn xóa địa điểm này không?")) return;
+            const { error } = await supabaseClient.from('places').delete().eq('id', id);
+            if (error) {
+                alert("Lỗi khi xóa: " + error.message);
+            } else {
+                alert("🗑️ Đã xóa thành công!");
+                loadAdminPlaces();
+                fetchPlacesLibrary();
+            }
+        }
+
+        // 1. Tải file mẫu CSV chuẩn form để điền dữ liệu
+        function downloadPlaceTemplate() {
+            const csvContent = "type,region,city,name,address,mapLink,image,description,timeToVisit,price\n" +
+                            "attraction,North,Hanoi,Hanoi Opera House,1 Trang Tien Hoan Kiem,https://maps.app.goo.gl/RRN1f4DLrCXTxnWD6,https://media-cdn.tripadvisor.com/media/attractions-splice-spp-674x446/12/78/74/95.jpg,Evening,https://example.com/image.jpg,Historical French colonial opera house,60,30000 VND\n" +
+                            "food,North,Hanoi,Bun Cha Huong Lien,24 Le Van Huu Hai Ba Trung,https://maps.app.goo.gl/6AxUMaQJmfVUBH6i6,https://example.com/food.jpg,Famous bun cha restaurant,45,50000 - 100000 VND";
+            
+            const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "mau_nhap_dia_diem.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // 2. Xử lý đọc file CSV người dùng chọn và đẩy lên Supabase
+        async function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const rows = parseCSV(text);
+                
+                if (rows.length === 0) {
+                    alert("File CSV trống hoặc không đúng định dạng!");
+                    return;
+                }
+
+                if (!confirm(`Phát hiện ${rows.length} địa điểm trong file. Mày có chắc chắn muốn upload lên Supabase không?`)) {
+                    event.target.value = '';
+                    return;
+                }
+
+                // Đẩy lần lượt hoặc dùng insert mảng vào Supabase
+                const { data, error } = await supabaseClient.from('places').insert(rows);
+                
+                if (error) {
+                    alert("Lỗi khi import dữ liệu: " + error.message);
+                } else {
+                    alert(`✨ Đã upload thành công ${rows.length} địa điểm lên hệ thống!`);
+                    loadAdminPlaces();
+                    fetchPlacesLibrary();
+                }
+                event.target.value = ''; // Reset input file
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // Hàm phụ trợ bóc tách chuỗi CSV thành mảng JSON objects chuẩn
+        function parseCSV(text) {
+        const lines = text.split(/\r\n|\n/);
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        let result = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            
+            let row = [];
+            let inQuotes = false;
+            let entry = '';
+            
+            for (let char of lines[i]) {
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    row.push(entry.trim().replace(/^"|"$/g, ''));
+                    entry = '';
+                } else {
+                    entry += char;
+                }
+            }
+            row.push(entry.trim().replace(/^"|"$/g, ''));
+
+            let obj = {};
+            for (let j = 0; j < headers.length; j++) {
+                let val = row[j] || '';
+                if (headers[j] === 'timeToVisit') {
+                    val = parseInt(val) || 60;
+                }
+                obj[headers[j]] = val;
+            }
+
+            // QUAN TRỌNG: Xóa bỏ trường id trong file CSV để Supabase tự sinh ID số tự động tăng giống hệt lúc tạo thủ công
+            delete obj.id;
+
+            // Đảm bảo type và region không bị lệch chữ hoa chữ thường
+            if (obj.type) obj.type = obj.type.toLowerCase().trim();
+            if (obj.region) {
+                let r = obj.region.toLowerCase();
+                if (r.includes('north')) obj.region = 'North';
+                else if (r.includes('central')) obj.region = 'Central';
+                else if (r.includes('south')) obj.region = 'South';
+            }
+
+            result.push(obj);
+        }
+        return result;
+    }
+
+    // Gọi khi chuyển sang tab Khách hàng
+    let allCustomerData = [];
+
+    async function loadAdminCustomers() {
+        const container = document.getElementById('admin-customers-table-container');
+        container.innerHTML = "Đang tổng hợp dữ liệu khách hàng...";
+
+        try {
+            // 1. Lấy toàn bộ danh sách user từ bảng profiles (danh sách account thực tế)
+            let profileMap = {};
+            let adminUserIds = new Set();
+
+            const { data: profilesData, error: profError } = await supabaseClient
+                .from('profiles')
+                .select('*');
+            
+            if (!profError && profilesData) {
+                profilesData.forEach(p => {
+                    let uid = p.user_id || p.id;
+                    let email = p.email || '';
+                    profileMap[uid] = p;
+                    
+                    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+                        adminUserIds.add(uid);
+                    }
+                });
+            }
+
+            // 2. Lấy dữ liệu lịch trình từ bảng itineraries
+            const { data: itinerariesData, error: itinError } = await supabaseClient
+                .from('itineraries')
+                .select('*')
+                .order('updated_at', { ascending: false });
+            
+            if (itinError) {
+                console.error("Lỗi tải lịch trình:", itinError.message);
+            }
+
+            // 3. Gom nhóm tour theo user_id
+            let userToursMap = {};
+            let totalTourCount = 0;
+            let latestTime = null;
+
+            if (itinerariesData) {
+                itinerariesData.forEach(item => {
+                    let uid = item.user_id || 'guest';
+                    
+                    // SKIP: Nếu là tour của admin thì bỏ qua không tính vào tổng số tour
+                    if (adminUserIds.has(uid) || item.user_email === ADMIN_EMAIL) return;
+
+                    if (!userToursMap[uid]) userToursMap[uid] = [];
+                    userToursMap[uid].push(item);
+
+                    totalTourCount++;
+                    if (!latestTime || new Date(item.updated_at) > new Date(latestTime)) {
+                        latestTime = item.updated_at;
+                    }
+                });
+            }
+
+            // 4. Tổng hợp danh sách khách hàng dựa trên bảng PROFILES (đảm bảo user chưa tạo tour vẫn hiện)
+            let customerList = [];
+            let processedIds = new Set();
+
+            // Duyệt qua tất cả user có profile trước
+            Object.keys(profileMap).forEach(uid => {
+                if (adminUserIds.has(uid) || uid === currentUser?.id) return;
+                let prof = profileMap[uid];
+                if (prof.email && prof.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) return;
+
+                processedIds.add(uid);
+                customerList.push({
+                    userId: uid,
+                    name: prof.full_name || prof.name || uid.split('@')[0] || 'Khách hàng',
+                    email: prof.email || uid,
+                    profile: prof,
+                    tours: userToursMap[uid] || [] // Nếu chưa tạo tour thì mảng tours rỗng []
+                });
+            });
+
+            // Bổ sung các user có tạo tour nhưng vì lý do nào đó chưa có trong bảng profiles
+            if (itinerariesData) {
+                itinerariesData.forEach(item => {
+                    let uid = item.user_id || 'guest';
+                    if (adminUserIds.has(uid) || uid === currentUser?.id || processedIds.has(uid)) return;
+
+                    processedIds.add(uid);
+                    customerList.push({
+                        userId: uid,
+                        name: uid.split('@')[0] || 'Khách hàng',
+                        email: uid,
+                        profile: {},
+                        tours: userToursMap[uid] || []
+                    });
+                });
+            }
+
+            allCustomerData = customerList;
+
+            // Cập nhật metrics cards
+            document.getElementById('metric-total-users').innerText = allCustomerData.length;
+            document.getElementById('metric-total-tours').innerText = totalTourCount;
+
+            renderCustomerTable(allCustomerData);
+
+        } catch (err) {
+            console.error("Lỗi ngoại lệ khi load khách hàng:", err);
+            container.innerHTML = `<p style="color: red;">Lỗi hệ thống: ${err.message}</p>`;
+        }
+    }
+
+    function renderCustomerTable(customers) {
+        const container = document.getElementById('admin-customers-table-container');
+        if (customers.length === 0) {
+            container.innerHTML = "<p>Không tìm thấy khách hàng phù hợp.</p>";
+            return;
+        }
+
+        let html = `
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; font-size: 13px;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 1px solid #cbd5e1; text-align: left; color: #475569;">
+                        <th style="padding: 12px;">Họ tên</th>
+                        <th style="padding: 12px;">Email</th>
+                        <th style="padding: 12px; text-align: center;">Số lượng Tour</th>
+                        <th style="padding: 12px;">Hoạt động gần nhất</th>
+                        <th style="padding: 12px; text-align: center;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        customers.forEach(cust => {
+            let lastUpdated = cust.tours.reduce((latest, t) => !latest || new Date(t.updated_at) > new Date(latest) ? t.updated_at : latest, null);
+            let formattedDate = lastUpdated ? new Date(lastUpdated).toLocaleString() : 'N/A';
+
+            // Mã hóa dữ liệu để truyền gọn vào nút bấm
+            let safeCustData = encodeURIComponent(JSON.stringify(cust));
+
+            html += `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px; font-weight: bold; color: #0f172a;">${cust.name}</td>
+                    <td style="padding: 12px; color: #334155;">${cust.email}</td>
+                    <td style="padding: 12px; text-align: center;"><span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">${cust.tours.length} tour</span></td>
+                    <td style="padding: 12px; color: #64748b;">${formattedDate}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <button onclick='openCustomerDetail("${safeCustData}")' style="background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">🔍 Xem chi tiết</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    function filterCustomers() {
+        let keyword = document.getElementById('customer-search-input').value.toLowerCase();
+        let filtered = allCustomerData.filter(c => c.name.toLowerCase().includes(keyword) || c.email.toLowerCase().includes(keyword));
+        renderCustomerTable(filtered);
+    }
+
+    function openCustomerDetail(encodedCustStr) {
+        let cust = JSON.parse(decodeURIComponent(encodedCustStr));
+        document.getElementById('modal-customer-title').innerText = `Hồ Sơ & Lịch Trình: ${cust.name}`;
+        
+        // 1. Render Profile (Cái nào không điền thì bỏ trống / ẩn đi)
+        let profileContainer = document.getElementById('modal-profile-content');
+        profileContainer.innerHTML = '';
+
+        let prof = cust.profile || {};
+        // Cố định danh sách các trường để luôn hiện đủ mục dù data có null hay trống
+        let profileFields = [
+            { label: 'Họ và tên', val: cust.name || '' },
+            { label: 'Email', val: cust.email || '' },
+            { label: 'Số điện thoại', val: prof.phone || prof.phone_number || '' },
+            { label: 'Quốc tịch / Địa phương', val: prof.country || prof.location || '' },
+            { label: 'Sở thích (Preferences)', val: prof.preference || prof.bio || prof.notes || '' }
+        ];
+
+        profileFields.forEach(f => {
+            // Luôn hiển thị trường thông tin, nếu không có dữ liệu thì hiển thị chữ (Trống)
+            let displayVal = f.val ? `<span style="color: #1e293b;">${f.val}</span>` : `<span style="color: #94a3b8; font-style: italic;">(Trống)</span>`;
+            profileContainer.innerHTML += `
+                <div><strong>${f.label}:</strong> ${displayVal}</div>
+            `;
+        });
+
+        if (profileContainer.innerHTML === '') {
+            profileContainer.innerHTML = `<div style="color: #94a3b8; font-style: italic; grid-column: span 2;">Khách hàng này chưa cập nhật thông tin profile chi tiết ngoài email.</div>`;
+        }
+
+        // 2. Render Danh sách lịch trình của khách
+        let itinerContainer = document.getElementById('modal-itineraries-content');
+        itinerContainer.innerHTML = '';
+
+        cust.tours.forEach(tour => {
+            let payload = tour.data_json || {};
+            let days = payload.days || [];
+            
+            let collectedPlaces = [];
+            days.forEach(day => {
+                if (day.items && day.items.length > 0) {
+                    day.items.forEach(item => {
+                        if (!item.isTransit) {
+                            let name = item.name || item.title || 'Điểm đến tùy chỉnh';
+                            let city = item.city ? `(${item.city})` : '';
+                            collectedPlaces.push(`${name} ${city}`);
+                        }
+                    });
+                }
+            });
+
+            let placesHtml = collectedPlaces.length > 0 
+                ? collectedPlaces.map(p => `<span style="background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; font-size: 11px; display: inline-block; margin: 2px;">📍 ${p}</span>`).join('')
+                : '<span style="color: #94a3b8; font-size: 12px;">Chưa chọn địa điểm nào</span>';
+
+            itinerContainer.innerHTML += `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px;">
+                    <div style="font-weight: bold; color: #1e293b; font-size: 14px; margin-bottom: 4px;">📌 ${tour.title || 'Lịch trình không tên'}</div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">Cập nhật lần cuối: ${new Date(tour.updated_at).toLocaleString()}</div>
+                    <div style="font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 4px;">Các địa điểm khách chọn:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">${placesHtml}</div>
+                </div>
+            `;
+        });
+
+        document.getElementById('customer-detail-modal').style.display = 'flex';
+    }
+
+    function closeCustomerModal() {
+        document.getElementById('customer-detail-modal').style.display = 'none';
+    }
+
+    let currentAdminPlacesData = []; // Lưu trữ danh sách gốc để lọc
+    let selectedAdminCity = 'All';
+
+    // Sửa lại hàm loadAdminPlaces để lưu dữ liệu gốc
+    function loadAdminPlaces() {
+        const container = document.getElementById('admin-places-list');
+        container.innerHTML = "Đang tải danh sách địa điểm...";
+
+        supabaseClient.from('places').select('*').order('id', { ascending: false }).then(({ data, error }) => {
+            if (error || !data) {
+                currentAdminPlacesData = allPlaces || [];
+            } else {
+                currentAdminPlacesData = data;
+            }
+            renderAdminCityFilters(currentAdminPlacesData);
+            filterAndRenderAdminPlaces();
+        });
+    }
+
+    // Tạo các nút tag tỉnh thành tự động dựa trên data có sẵn
+    function renderAdminCityFilters(places) {
+        let cities = [...new Set(places.map(p => p.city).filter(Boolean))];
+        const container = document.getElementById('admin-city-filter-container');
+        if (!container) return;
+
+        let html = `<button onclick="filterAdminPlacesByCity('All')" style="padding: 5px 12px; cursor: pointer; border: 1px solid #cbd5e1; background: ${selectedAdminCity === 'All' ? '#0f172a' : '#fff'}; color: ${selectedAdminCity === 'All' ? '#fff' : '#334155'}; border-radius: 20px; font-size: 12px; font-weight: bold;">Tất cả tỉnh thành</button>`;
+        
+        cities.forEach(city => {
+            let isActive = selectedAdminCity === city;
+            html += `<button onclick="filterAdminPlacesByCity('${city}')" style="padding: 5px 12px; cursor: pointer; border: 1px solid #cbd5e1; background: ${isActive ? '#0f172a' : '#fff'}; color: ${isActive ? '#fff' : '#334155'}; border-radius: 20px; font-size: 12px; font-weight: bold;">${city}</button>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function filterAdminPlacesByCity(city) {
+        selectedAdminCity = city;
+        renderAdminCityFilters(currentAdminPlacesData);
+        filterAndRenderAdminPlaces();
+    }
+
+    function filterAndRenderAdminPlaces() {
+        let filtered = currentAdminPlacesData;
+        if (selectedAdminCity !== 'All') {
+            filtered = currentAdminPlacesData.filter(p => p.city === selectedAdminCity);
+        }
+        renderPlacesTable(filtered);
+    }
+
+    let allCustomerRequests = [];
+    let currentSelectedRequestId = null;
+
+    function switchAdminTab(tabName) {
+        document.getElementById('admin-requests-section').style.display = tabName === 'requests' ? 'block' : 'none';
+        let reqBtn = document.getElementById('btn-tab-requests');
+        if (reqBtn) {
+            reqBtn.style.background = tabName === 'requests' ? '#2196f3' : '#e2e8f0';
+            reqBtn.style.color = tabName === 'requests' ? '#fff' : '#333';
+        }
+        
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+        
+        let targetPanel = tabName === 'requests' ? document.getElementById('admin-requests-section') : document.getElementById(`panel-${tabName}`);
+        if (targetPanel) targetPanel.classList.add('active');
+
+        if (tabName === 'requests') {
+            fetchCustomerRequests();
+        }
+    }
+
+    async function fetchCustomerRequests() {
+        const container = document.getElementById('admin-requests-list');
+        container.innerHTML = `<p style="color: #777; font-size: 13px;">Loading requests...</p>`;
+
+        const { data, error } = await supabaseClient
+            .from('customer_requests')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            container.innerHTML = `<p style="color: #d32f2f; font-size: 13px;">Error loading requests: ${error.message}</p>`;
+            return;
+        }
+
+        allCustomerRequests = data || [];
+        filterRequests();
+    }
+
+    function filterRequests() {
+        let typeFilter = document.getElementById('filter-req-type').value;
+        let statusFilter = document.getElementById('filter-req-status').value;
+        let timeFilter = document.getElementById('filter-req-time').value;
+
+        let filtered = allCustomerRequests.filter(req => {
+            if (typeFilter !== 'All' && req.request_type !== typeFilter) return false;
+            if (statusFilter !== 'All' && req.status !== statusFilter) return false;
+            
+            if (timeFilter !== 'All') {
+                let reqDate = new Date(req.created_at);
+                let now = new Date();
+                if (timeFilter === 'today') {
+                    if (reqDate.toDateString() !== now.toDateString()) return false;
+                } else if (timeFilter === '7days') {
+                    let diffDays = (now - reqDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays > 7) return false;
+                } else if (timeFilter === '30days') {
+                    let diffDays = (now - reqDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays > 30) return false;
+                }
+            }
+            return true;
+        });
+
+        renderRequestsTable(filtered);
+    }
+
+    // --- RENDER DANH SÁCH DẠNG 1 DÒNG GỌN GÀNG ---
+    function renderRequestsTable(requests) {
+        const container = document.getElementById('admin-requests-list');
+        if (!requests || requests.length === 0) {
+            container.innerHTML = `<p style="color: #777; font-size: 13px;">No requests found matching your filters.</p>`;
+            return;
+        }
+
+        let html = `
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; font-size: 13px;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 1px solid #cbd5e1; text-align: left; color: #475569;">
+                        <th style="padding: 10px;">Thời gian</th>
+                        <th style="padding: 10px;">Khách hàng</th>
+                        <th style="padding: 10px;">Email</th>
+                        <th style="padding: 10px;">SĐT</th>
+                        <th style="padding: 10px;">Loại yêu cầu</th>
+                        <th style="padding: 10px; text-align: center;">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        requests.forEach(req => {
+            let dateStr = new Date(req.created_at).toLocaleString();
+            let isDone = req.status === 'done';
+            let safeReqJson = encodeURIComponent(JSON.stringify(req));
+
+            html += `
+                <tr onclick='openRequestDetailModal("${safeReqJson}")' style="border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.1s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                    <td style="padding: 10px; color: #64748b; font-size: 11px;">${dateStr}</td>
+                    <td style="padding: 10px; font-weight: bold; color: #0f172a;">${req.name}</td>
+                    <td style="padding: 10px; color: #334155;">${req.email}</td>
+                    <td style="padding: 10px; color: #334155;">${req.phone}</td>
+                    <td style="padding: 10px; color: #0284c7; font-weight: bold;">${req.request_type}</td>
+                    <td style="padding: 10px; text-align: center;">
+                        <span style="background: ${isDone ? '#d1fae5' : '#fef3c7'}; color: ${isDone ? '#065f46' : '#92400e'}; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">${req.status.toUpperCase()}</span>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    // --- MỞ MODAL CHI TIẾT YÊU CẦU & LOAD NOTES ---
+    async function openRequestDetailModal(encodedReqStr) {
+        let req = JSON.parse(decodeURIComponent(encodedReqStr));
+        currentSelectedRequestId = req.id;
+
+        if (!document.getElementById('request-detail-modal')) {
+            let modalHtml = `
+                <div id="request-detail-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center;">
+                    <div style="background: white; width: 600px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; max-height: 85vh; overflow-y: auto;">
+                        <button onclick="closeRequestDetailModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+                        <h3 id="req-modal-title" style="margin-top: 0; color: #0d47a1; margin-bottom: 15px;">Chi Tiết Yêu Cầu Hỗ Trợ</h3>
+                        
+                        <!-- THÔNG TIN CƠ BẢN VÀ THAO TÁC -->
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div><strong>Khách:</strong> <span id="req-modal-name"></span></div>
+                                <button id="req-modal-view-cust-btn" style="background: #0f172a; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">🔍 Xem thông tin khách hàng</button>
+                            </div>
+                            <div><strong>Email:</strong> <span id="req-modal-email"></span> | <strong>SĐT:</strong> <span id="req-modal-phone"></span></div>
+                            
+                            <!-- ĐỔI LOẠI YÊU CẦU VÀ TRẠNG THÁI (ĐÃ FIX LỖI UPDATE NGAY LẬP TỨC) -->
+                            <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 2px;">Loại yêu cầu:</label>
+                                    <select id="req-modal-type" onchange="updateRequestTypeFromModal()" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff;">
+                                        <option value="Flight & Ticket Booking">Flight & Ticket Booking</option>
+                                        <option value="Tour Consultation">Tour Consultation</option>
+                                        <option value="Location Information Support">Location Information Support</option>
+                                        <option value="Other Requests">Other Requests</option>
+                                    </select>
+                                </div>
+                                <div style="width: 130px;">
+                                    <label style="font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 2px;">Trạng thái:</label>
+                                    <select id="req-modal-status" onchange="updateRequestStatusFromModal()" style="width: 100%; padding: 6px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold;">
+                                        <option value="pending">Pending</option>
+                                        <option value="done">Done</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NỘI DUNG MESSAGE -->
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 5px;">Nội dung khách gửi:</label>
+                            <div id="req-modal-message" style="background: #f1f5f9; padding: 12px; border-radius: 6px; font-size: 13px; color: #1e293b; border: 1px solid #cbd5e1;"></div>
+                        </div>
+
+                        <!-- HỆ THỐNG GHI CHÚ (NOTES) ĐỘC LẬP -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 5px;">Ghi chú nội bộ (Notes):</label>
+                            <div id="req-notes-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; max-height: 150px; overflow-y: auto;"></div>
+                            
+                            <div style="display: flex; gap: 6px;">
+                                <input type="text" id="new-req-note-input" placeholder="Nhập ghi chú mới..." style="flex: 1; padding: 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                <button onclick="addRequestNote()" style="background: #3b82f6; color: white; border: none; padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">Thêm Note</button>
+                            </div>
+                        </div>
+
+                        <!-- NÚT XOÁ YÊU CẦU -->
+                        <div style="border-top: 1px solid #eee; pt-15; display: flex; justify-content: flex-end; padding-top: 12px;">
+                            <button onclick="deleteCurrentRequest()" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">🗑️ Xoá yêu cầu này</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        // Đổ dữ liệu vào Modal
+        document.getElementById('req-modal-title').innerText = `Yêu cầu từ: ${req.name}`;
+        document.getElementById('req-modal-name').innerText = req.name;
+        document.getElementById('req-modal-email').innerText = req.email;
+        document.getElementById('req-modal-phone').innerText = req.phone;
+        document.getElementById('req-modal-type').value = req.request_type;
+        document.getElementById('req-modal-status').value = req.status;
+        document.getElementById('req-modal-message').innerText = req.message;
+
+        // Nút mở profile khách hàng
+        document.getElementById('req-modal-view-cust-btn').onclick = async () => {
+            // Tìm thông tin khách hàng từ user_id hoặc email để mở modal chi tiết tab khách hàng
+            const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', req.user_id).maybeSingle();
+            const { data: tours } = await supabaseClient.from('itineraries').select('*').eq('user_id', req.user_id);
+            
+            let custObj = {
+                userId: req.user_id,
+                name: req.name,
+                email: req.email,
+                profile: prof || {},
+                tours: tours || []
+            };
+            openCustomerDetail(encodeURIComponent(JSON.stringify(custObj)));
+        };
+
+        await fetchRequestNotes(req.id);
+        document.getElementById('request-detail-modal').style.display = 'flex';
+    }
+
+    function closeRequestDetailModal() {
+        document.getElementById('request-detail-modal').style.display = 'none';
+        fetchCustomerRequests(); // Load lại danh sách ngoài bảng cho chuẩn
+    }
+
+    // --- FIX LỖI UPDATE LOẠI YÊU CẦU & TRẠNG THÁI ---
+    async function updateRequestTypeFromModal() {
+        if (!currentSelectedRequestId) return;
+        let newType = document.getElementById('req-modal-type').value;
+        const { error } = await supabaseClient.from('customer_requests').update({ request_type: newType }).eq('id', currentSelectedRequestId);
+        if (error) alert("Lỗi update loại yêu cầu: " + error.message);
+        else {
+            // Cập nhật ngầm vào mảng local để đồng bộ ngay lập tức
+            let target = allCustomerRequests.find(r => r.id === currentSelectedRequestId);
+            if (target) target.request_type = newType;
+        }
+    }
+
+    async function updateRequestStatusFromModal() {
+        if (!currentSelectedRequestId) return;
+        let newStatus = document.getElementById('req-modal-status').value;
+        const { error } = await supabaseClient.from('customer_requests').update({ status: newStatus }).eq('id', currentSelectedRequestId);
+        if (error) alert("Lỗi update trạng thái: " + error.message);
+        else {
+            let target = allCustomerRequests.find(r => r.id === currentSelectedRequestId);
+            if (target) target.status = newStatus;
+        }
+    }
+
+    // --- QUẢN LÝ NOTES (HIỆN THỜI GIAN, SỬA, XÓA) ---
+    async function fetchRequestNotes(requestId) {
+        const container = document.getElementById('req-notes-list');
+        container.innerHTML = `<span style="font-size: 11px; color: #777;">Đang tải ghi chú...</span>`;
+
+        const { data, error } = await supabaseClient
+            .from('request_notes')
+            .select('*')
+            .eq('request_id', requestId)
+            .order('created_at', { ascending: true });
+
+        if (error || !data || data.length === 0) {
+            container.innerHTML = `<span style="font-size: 11px; color: #94a3b8; font-style: italic;">Chưa có ghi chú nào.</span>`;
+            return;
+        }
+
+        container.innerHTML = '';
+        data.forEach(note => {
+            let timeStr = new Date(note.created_at).toLocaleString();
+            container.innerHTML += `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                    <div>
+                        <span style="color: #1e293b;">${note.note_text}</span>
+                        <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${note.admin_email} - ${timeStr}</div>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <button onclick="editRequestNote('${note.id}', '${encodeURIComponent(note.note_text)}')" style="background:none; border:none; color:#0284c7; cursor:pointer; font-size:11px; font-weight:bold;">Sửa</button>
+                        <button onclick="deleteRequestNote('${note.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px; font-weight:bold;">✕</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    async function addRequestNote() {
+        if (!currentSelectedRequestId) return;
+        let input = document.getElementById('new-req-note-input');
+        let text = input.value.trim();
+        if (!text) return;
+
+        const { error } = await supabaseClient.from('request_notes').insert([{
+            request_id: currentSelectedRequestId,
+            admin_email: currentUser?.email || 'Admin',
+            note_text: text
+        }]);
+
+        if (error) {
+            alert("Lỗi thêm note: " + error.message);
+        } else {
+            input.value = '';
+            fetchRequestNotes(currentSelectedRequestId);
+        }
+    }
+
+    async function editRequestNote(noteId, oldTextEncoded) {
+        let oldText = decodeURIComponent(oldTextEncoded);
+        let newText = prompt("Chỉnh sửa nội dung ghi chú:", oldText);
+        if (newText === null || newText.trim() === '') return;
+
+        const { error } = await supabaseClient.from('request_notes').update({ note_text: newText.trim() }).eq('id', noteId);
+        if (error) alert("Lỗi sửa note: " + error.message);
+        else fetchRequestNotes(currentSelectedRequestId);
+    }
+
+    async function deleteRequestNote(noteId) {
+        if (!confirm("Xóa ghi chú này?")) return;
+        const { error } = await supabaseClient.from('request_notes').delete().eq('id', noteId);
+        if (error) alert("Lỗi xóa note: " + error.message);
+        else fetchRequestNotes(currentSelectedRequestId);
+    }
+
+    async function deleteCurrentRequest() {
+        if (!currentSelectedRequestId) return;
+        if (!confirm("Bạn có chắc chắn muốn xóa vĩnh viễn yêu cầu này không?")) return;
+
+        const { error } = await supabaseClient.from('customer_requests').delete().eq('id', currentSelectedRequestId);
+        if (error) {
+            alert("Lỗi xóa yêu cầu: " + error.message);
+        } else {
+            alert("🗑️ Đã xóa yêu cầu thành công!");
+            closeRequestDetailModal();
+            fetchCustomerRequests();
+        }
+    }
+    </script>
+</body>
+</html>

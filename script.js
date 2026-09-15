@@ -1044,11 +1044,17 @@ async function saveToCloud() {
                     else if (droppedPlaceDiv.classList.contains('card-activity')) placeType = 'activity';
                 }
 
+                let priceSpan = item.querySelector('.place-price');
+                let rawMin = priceSpan ? parseFloat(priceSpan.getAttribute('data-raw-min')) || 0 : 0;
+                let rawMax = priceSpan ? parseFloat(priceSpan.getAttribute('data-raw-max')) || rawMin : rawMin;
+
                 itemsData.push({
                     isCustom: false,
                     city: item.getAttribute('data-city') || '',
                     name: item.querySelector('.place-title')?.innerText || '',
                     timeToVisit: item.querySelector('.duration-input')?.value || 60,
+                    price_min: rawMin,
+                    price_max: rawMax,
                     price: '', 
                     description: '',
                     note: item.querySelector('.item-note')?.value || '',
@@ -1283,6 +1289,8 @@ async function loadDraftById(id) {
                                 name: item.name,
                                 city: item.city,
                                 timeToVisit: item.timeToVisit,
+                                price_min: item.price_min !== undefined ? item.price_min : (item.price ? parseFloat(item.price.toString().replace(/[^0-9.]/g, '')) || 0 : 0),
+                                price_max: item.price_max !== undefined ? item.price_max : (item.price ? parseFloat(item.price.toString().replace(/[^0-9.]/g, '')) || 0 : 0),
                                 price: item.price || 'Free',
                                 description: ''
                             }, currentDayBlock.id);
@@ -1573,6 +1581,8 @@ async function useSampleTrip(id) {
                                 name: item.name,
                                 city: item.city,
                                 timeToVisit: item.timeToVisit,
+                                price_min: item.price_min !== undefined ? item.price_min : (item.price ? parseFloat(item.price.toString().replace(/[^0-9.]/g, '')) || 0 : 0),
+                                price_max: item.price_max !== undefined ? item.price_max : (item.price ? parseFloat(item.price.toString().replace(/[^0-9.]/g, '')) || 0 : 0),
                                 price: item.price || 'Free',
                                 description: ''
                             }, currentDayBlock.id);

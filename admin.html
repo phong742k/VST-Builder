@@ -385,9 +385,16 @@
                         <input type="number" id="plc-time" value="60" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
                 </div>
-                <div style="margin-bottom: 10px;">
-                    <label style="font-size: 12px; font-weight: bold; color: #555;">Price (VND - Để trống nếu Free)</label>
-                    <input type="number" id="plc-price" placeholder="e.g. 50000" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <!-- Cụm 2 ô nhập Min và Max Price -->
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #555;">Min Price (VND)</label>
+                        <input type="number" id="plc-price-min" placeholder="e.g. 50000" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #555;">Max Price (VND - Tự bằng Min nếu trống)</label>
+                        <input type="number" id="plc-price-max" placeholder="e.g. 100000" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
                 </div>
                 <div>
                     <label style="font-size: 12px; font-weight: bold; color: #555;">Link Ảnh</label>
@@ -1491,7 +1498,8 @@
             document.getElementById('plc-region').value = place ? place.region : 'North';
             document.getElementById('plc-city').value = place ? place.city : '';
             document.getElementById('plc-time').value = place ? place.timeToVisit : 60;
-            document.getElementById('plc-price').value = place ? place.price : '';
+            document.getElementById('plc-price-min').value = place ? (place.price_min || '') : '';
+            document.getElementById('plc-price-max').value = place ? (place.price_max || '') : '';
             document.getElementById('plc-image').value = place ? place.image : '';
             document.getElementById('plc-map').value = place ? place.mapLink : '';
             document.getElementById('plc-desc').value = place ? place.description : '';
@@ -1504,52 +1512,67 @@
         }
 
         async function savePlaceData() {
-        const name = document.getElementById('plc-name').value.trim();
-        if (!name) { alert("Vui lòng nhập tên địa điểm!"); return; }
+            const name = document.getElementById('plc-name').value.trim();
+            if (!name) { alert("Vui lòng nhập tên địa điểm!"); return; }
 
-        // Đọc giá trị từ ô nhập giá duy nhất
-        let rawPriceInput = document.getElementById('plc-price').value.trim();
-        
-        // Xử lý: Nếu bỏ trống thì gán bằng 0 (Free), ngược lại lấy số thô thuần túy
-        let numericPrice = rawPriceInput ? (parseFloat(rawPriceInput.replace(/[^0-9.]/g, '')) || 0) : 0;
+            // Đọc giá trị từ 2 ô Min và Max
+            let rawMin = document.getElementById('plc-price-min').value.trim();
+            let rawMax = document.getElementById('plc-price-max').value.trim();
 
-        const placeRecord = {
-            name: name,
-            type: document.getElementById('plc-type').value,
-            region: document.getElementById('plc-region').value,
-            city: document.getElementById('plc-city').value.trim(),
-            timeToVisit: parseInt(document.getElementById('plc-time').value) || 60,
+            // Xử lý số thô
+            let minPrice = rawMin ? (parseFloat(rawMin.replace(/[^0-9.]/g, '')) || 0) : 0;
             
-            // ĐẨY VÀO 2 CỘT SỐ THÔ MỚI (Ghi đè giá trị giống nhau vì đây là giá đơn cố định)
-            price_min: numericPrice,
-            price_max: numericPrice,
-            
-            // Giữ lại cột price text cũ (hoặc ghi chuỗi hiển thị) để tương thích ngược nếu cần
-            price: numericPrice > 0 ? numericPrice.toLocaleString('vi-VN') + ' VND' : 'Free',
+            // LOGIC TỰ ĐỒNG BỘ: Nếu có nhập Min nhưng bỏ trống Max -> Tự hiểu Max = Min
+            let maxPrice = rawMax ? (parseFloat(rawMax.replace(/[^0-9.]/g, '')) || 0) : minPrice;
 
-            image: document.getElementById('plc-image').value.trim(),
-            mapLink: document.getElementById('plc-map').value.trim(),
-            description: document.getElementById('plc-desc').value.trim()
-        };
+            // Đề phòng trường hợp nhập ngược max < min thì tự đảo lại cho đúng
+            if (maxPrice < minPrice) {
+                let temp = minPrice; minPrice = maxPrice; maxPrice = temp;
+            }
 
-        let res;
-        if (currentEditingPlaceId) {
-            // Đang sửa: giữ nguyên id cũ
-            res = await supabaseClient.from('places').update(placeRecord).eq('id', currentEditingPlaceId);
-        } else {
-            // Thêm mới: bỏ qua id, để Supabase tự sinh ID
-            res = await supabaseClient.from('places').insert([placeRecord]);
+            // Tạo chuỗi hiển thị text tương thích ngược cho cột price cũ nếu cần
+            let displayPriceStr = 'Free';
+            if (minPrice > 0 || maxPrice > 0) {
+                if (minPrice === maxPrice) {
+                    displayPriceStr = minPrice.toLocaleString('vi-VN') + ' VND';
+                } else {
+                    displayPriceStr = `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')} VND`;
+                }
+            }
+
+            const placeRecord = {
+                name: name,
+                type: document.getElementById('plc-type').value,
+                region: document.getElementById('plc-region').value,
+                city: document.getElementById('plc-city').value.trim(),
+                timeToVisit: parseInt(document.getElementById('plc-time').value) || 60,
+                
+                // Lưu thẳng số thô vào 2 cột chuẩn Supabase
+                price_min: minPrice,
+                price_max: maxPrice,
+                price: displayPriceStr, // Cột text cũ để dự phòng hiển thị
+
+                image: document.getElementById('plc-image').value.trim(),
+                mapLink: document.getElementById('plc-map').value.trim(),
+                description: document.getElementById('plc-desc').value.trim()
+            };
+
+            let res;
+            if (currentEditingPlaceId) {
+                res = await supabaseClient.from('places').update(placeRecord).eq('id', currentEditingPlaceId);
+            } else {
+                res = await supabaseClient.from('places').insert([placeRecord]);
+            }
+
+            if (res.error) {
+                alert("Lỗi lưu địa điểm: " + res.error.message);
+            } else {
+                alert("✨ Lưu địa điểm thành công!");
+                closePlaceModal();
+                loadAdminPlaces();
+                fetchPlacesLibrary();
+            }
         }
-
-        if (res.error) {
-            alert("Lỗi lưu địa điểm: " + res.error.message);
-        } else {
-            alert("✨ Lưu địa điểm thành công!");
-            closePlaceModal();
-            loadAdminPlaces();
-            fetchPlacesLibrary();
-        }
-    }
 
         async function deletePlace(id) {
             if (!confirm("Bạn có chắc chắn muốn xóa địa điểm này không?")) return;

@@ -24,7 +24,6 @@ supabaseClient.auth.onAuthStateChange(async(event, session) => {
     document.getElementById('guest-lock-screen').style.display = 'none';
     document.getElementById('dashboard-selector').style.display = 'none';
     document.getElementById('main-app-container').style.display = 'flex';
-    document.getElementById('floating-actions').style.display = 'flex';
 
     if (dayCount === 0) {
         initBoard();
@@ -52,14 +51,12 @@ function showGuestLock() {
     document.getElementById('guest-lock-screen').style.display = 'block';
     document.getElementById('dashboard-selector').style.display = 'none';
     document.getElementById('main-app-container').style.display = 'none';
-    document.getElementById('floating-actions').style.display = 'none';
 }
 
 function showDashboardSelector() {
     document.getElementById('guest-lock-screen').style.display = 'none';
     document.getElementById('dashboard-selector').style.display = 'block';
     document.getElementById('main-app-container').style.display = 'none';
-    document.getElementById('floating-actions').style.display = 'none';
 }
 
 // --- TẠO MỚI LỊCH TRÌNH CÓ CHECK LƯU NHÁP ---
@@ -85,7 +82,6 @@ async function startNewItinerary() {
     if (draftsMod) draftsMod.style.display = 'none';
 
     document.getElementById('main-app-container').style.display = 'flex';
-    document.getElementById('floating-actions').style.display = 'flex';
     
     initBoard();
 }
@@ -193,7 +189,7 @@ function renderLibrary(places) {
                 <h4>${place.name}</h4>
                 ${addressHtml}
                 ${mapButtonHtml}
-                <p style="margin-top: 4px;">⏱️ ${place.timeToVisit} mins | 💰 ${formatPriceDisplay(place.price)}</p>
+                <p style="margin-top: 4px;">⏱️ ${place.timeToVisit} mins | 💰 ${formatPriceDisplay(place)}</p>
                 <p class="place-desc">${place.description}</p>
                 <button onclick="event.stopPropagation(); addPlaceQuickly('${safeJson}')" style="margin-top: 6px; background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">➕ Add to my Trip</button>
             </div>
@@ -491,6 +487,7 @@ function addPlaceToDay(dropzone, placeData, dayId) {
     wrapper.setAttribute('draggable', 'true');
     wrapper.addEventListener('dragstart', (e) => handleDragStart(e, wrapper));
     wrapper.addEventListener('dragend', (e) => handleDragEnd(e, wrapper));
+    wrapper._placeData = placeData;
 
     if (placeData.isCustom) {
         // Cập nhật lại phần HTML của custom-item trong hàm addPlaceToDay()
@@ -539,6 +536,8 @@ function addPlaceToDay(dropzone, placeData, dayId) {
         `;
     } else {
         wrapper.setAttribute('data-city', placeData.city || '');
+        let priceDisplayStr = formatPriceDisplay(placeData); // Dùng hàm format chuẩn Min - Max hoặc Free
+        
         wrapper.innerHTML = `
             <div class="dropped-place ${colorClass}">
                 <div style="flex-grow: 1;">
@@ -548,7 +547,7 @@ function addPlaceToDay(dropzone, placeData, dayId) {
                         <label style="font-size:12px; color:#555;">Duration:</label>
                         <input type="number" class="duration-input" value="${placeData.timeToVisit}" step="15" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
                         <span style="font-size:12px; color:#555;">mins</span>
-                        <span class="place-price" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${placeData.price}</span>
+                        <span class="place-price" data-raw-min="${placeData.price_min || 0}" data-raw-max="${placeData.price_max || 0}" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${priceDisplayStr}</span>
                     </div>
                     <div style="margin-top: 8px;">
                         <input type="text" class="item-note" placeholder="Personal Note" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
@@ -846,7 +845,7 @@ function showPlaceModal(place) {
     document.getElementById('modal-title').innerText = place.name || '';
     document.getElementById('modal-address').innerText = place.address ? `📍 ${place.address}` : '';
     document.getElementById('modal-time').innerText = place.timeToVisit || 60;
-    document.getElementById('modal-price').innerText = formatPriceDisplay(place.price);
+    document.getElementById('modal-price').innerText = formatPriceDisplay(place);
     
     // Đưa mô tả vào một box cố định chiều cao, bật scroll riêng, đồng thời ghim cứng cụm nút ở đáy modal
     const modalBox = document.querySelector('#place-modal > div');
@@ -1209,7 +1208,6 @@ async function loadDraftById(id) {
     document.getElementById('dashboard-selector').style.display = 'none';
     document.getElementById('guest-lock-screen').style.display = 'none';
     document.getElementById('main-app-container').style.display = 'flex';
-    document.getElementById('floating-actions').style.display = 'flex';
 
     const board = document.getElementById('itinerary-board');
     board.innerHTML = '';
@@ -1340,24 +1338,23 @@ function closeSampleTripsModal() {
     document.getElementById('sample-trips-modal').style.display = 'none';
 }
 
-async function fetchSampleTrips(durationFilter) {
+async function fetchSampleTrips() {
     const grid = document.getElementById('sample-trips-grid');
     grid.innerHTML = `<p style="color: #777; font-size: 13px;">Loading itineraries...</p>`;
 
-    let query = supabaseClient.from('itinerary_templates').select('*');
-    if (durationFilter && durationFilter !== 'All') {
-        query = query.eq('duration', durationFilter);
-    }
-
-    const { data, error } = await query.order('id', { ascending: false });
+    const { data, error } = await supabaseClient
+        .from('itinerary_templates')
+        .select('*')
+        .order('id', { ascending: false });
 
     if (error) {
         grid.innerHTML = `<p style="color: #d32f2f; font-size: 13px;">Error loading trips: ${error.message}</p>`;
         return;
     }
 
-    allSampleTrips = data;
-    renderSampleTripsGrid(allSampleTrips);
+    allSampleTrips = data || [];
+    renderTagFilterButtons(allSampleTrips);
+    filterAndRenderSampleTrips();
 }
 
 function filterSampleTrips(duration) {
@@ -1501,7 +1498,6 @@ async function useSampleTrip(id) {
     document.getElementById('dashboard-selector').style.display = 'none';
     document.getElementById('guest-lock-screen').style.display = 'none';
     document.getElementById('main-app-container').style.display = 'flex';
-    document.getElementById('floating-actions').style.display = 'flex';
 
     const board = document.getElementById('itinerary-board');
     board.innerHTML = '';
@@ -1612,25 +1608,6 @@ async function useSampleTrip(id) {
 
 // --- HỆ THỐNG TAG CHO SAMPLE TRIPS ---
 let selectedTagFilter = 'All';
-
-async function fetchSampleTrips() {
-    const grid = document.getElementById('sample-trips-grid');
-    grid.innerHTML = `<p style="color: #777; font-size: 13px;">Loading itineraries...</p>`;
-
-    const { data, error } = await supabaseClient
-        .from('itinerary_templates')
-        .select('*')
-        .order('id', { ascending: false });
-
-    if (error) {
-        grid.innerHTML = `<p style="color: #d32f2f; font-size: 13px;">Error loading trips: ${error.message}</p>`;
-        return;
-    }
-
-    allSampleTrips = data;
-    renderTagFilterButtons(allSampleTrips);
-    filterAndRenderSampleTrips();
-}
 
 function renderTagFilterButtons(trips) {
     let tagSet = new Set();
@@ -1759,34 +1736,6 @@ function moveItem(btn, direction) {
     }
 
     // Dọn dẹp lại transit và tính lại giờ giấc
-    cleanupTransits(dropzone);
-    recalculateTime(dayId);
-}
-
-// --- 1. HÀM ĐẢO VỊ TRÍ LÊN / XUỐNG TRONG LỊCH TRÌNH ---
-function moveItem(btn, direction) {
-    let item = btn.closest('.timeline-item');
-    let dropzone = item.closest('.dropzone');
-    let dayId = dropzone.closest('.day-block').id;
-
-    if (direction === 'up') {
-        let prevItem = item.previousElementSibling;
-        if (prevItem && prevItem.classList.contains('transit-item')) {
-            prevItem = prevItem.previousElementSibling;
-        }
-        if (prevItem) {
-            dropzone.insertBefore(item, prevItem);
-        }
-    } else if (direction === 'down') {
-        let nextItem = item.nextElementSibling;
-        if (nextItem && nextItem.classList.contains('transit-item')) {
-            nextItem = nextItem.nextElementSibling;
-        }
-        if (nextItem) {
-            dropzone.insertBefore(nextItem, item);
-        }
-    }
-
     cleanupTransits(dropzone);
     recalculateTime(dayId);
 }
@@ -2018,32 +1967,40 @@ function switchUserCurrency(unit) {
             priceSpan.innerText = `| Price: ${formatPriceDisplay(rawText)}`;
         }
     });
+
+    // Thêm đoạn này vào bên trong hàm switchUserCurrency(unit)
+    document.querySelectorAll('.day-block .timeline-item.place-item').forEach(item => {
+        let priceSpan = item.querySelector('.place-price');
+        if (priceSpan) {
+            let min = parseFloat(priceSpan.getAttribute('data-raw-min')) || 0;
+            let max = parseFloat(priceSpan.getAttribute('data-raw-max')) || min;
+            
+            // Tạo lại object giả lập để gọi hàm formatPriceDisplay theo unit mới
+            let tempPlace = { price_min: min, price_max: max };
+            priceSpan.innerText = `| Price: ${formatPriceDisplay(tempPlace, unit)}`;
+        }
+    });
 }
 
 // --- 2. HÀM FORMAT GIÁ TIỀN (XỬ LÝ MIN - MAX, FREE, SỐ 0) ---
-function formatPriceDisplay(priceStr, currency = currentCurrencyUnit) {
-    if (!priceStr) return 'Free';
-    let cleanStr = priceStr.toString().trim().toLowerCase();
-    
-    // Nếu là free hoặc bằng 0 thì trả về "Free"
-    if (cleanStr === 'free' || cleanStr === '0' || cleanStr === '0 vnd' || cleanStr === '0 usd') {
-        return 'Free';
-    }
+// Thay thế hoặc cập nhật hàm formatPriceDisplay cũ bằng hàm này:
+function formatPriceDisplay(place, currency = currentCurrencyUnit) {
+    let min = parseFloat(place.price_min) || 0;
+    let max = parseFloat(place.price_max) || min;
 
-    // Xử lý khoảng giá Min - Max (có dấu gạch ngang '-')
-    let parts = priceStr.split('-').map(p => p.trim());
-    if (parts.length === 2) {
-        let minFormatted = convertSinglePrice(parts[0], currency);
-        let maxFormatted = convertSinglePrice(parts[1], currency);
-        return `${minFormatted} - ${maxFormatted}`;
-    } else {
-        return convertSinglePrice(priceStr, currency);
+    if (min === 0 && max === 0) return 'Free';
+
+    let formattedMin = convertSinglePrice(min, currency);
+    let formattedMax = convertSinglePrice(max, currency);
+
+    if (min === max || max === 0) {
+        return formattedMin;
     }
+    return `${formattedMin} - ${formattedMax}`;
 }
 
 function convertSinglePrice(numVND, targetCurrency) {
     let num = parseFloat(numVND) || 0;
-    if (num <= 0) return 'Free';
 
     if (targetCurrency === 'USD') {
         let valInUSD = num / currentExchangeRate;
@@ -2065,27 +2022,27 @@ function updateCostSummary() {
     dayBlocks.forEach(block => {
         const items = block.querySelectorAll('.timeline-item');
         items.forEach(item => {
-            // 1. Xử lý card địa điểm từ thư viện
+            // 1. Card địa điểm từ thư viện
             if (item.classList.contains('place-item')) {
-                let priceStr = item.querySelector('.place-price')?.innerText || '';
-                let droppedDiv = item.querySelector('.dropped-place');
-                let isFood = droppedDiv && droppedDiv.classList.contains('card-food');
+                let placeData = item._placeData || {}; // Lưu object place gốc khi drop card vào
+                let isFood = placeData.type === 'food';
                 
-                let range = extractPriceRange(priceStr);
+                let min = parseFloat(placeData.price_min) || 0;
+                let max = parseFloat(placeData.price_max) || min;
+
                 let target = isFood ? totals.food : totals.attraction;
-                target.min += range.min;
-                target.max += range.max;
+                target.min += min;
+                target.max += max;
             } 
-            // 2. Xử lý thẻ trống (Custom Card)
+            // 2. Thẻ trống (Custom Card) do user tự nhập
             else if (item.classList.contains('custom-item')) {
                 let priceStr = item.querySelector('.custom-price')?.value || '';
                 let customType = item.querySelector('.custom-type')?.value || '';
                 let currSelect = item.querySelector('.custom-currency-select');
                 let itemCurr = currSelect ? currSelect.value : 'VND';
                 
-                let range = extractPriceRange(priceStr + ' ' + itemCurr);
+                let range = extractPriceRangeRaw(priceStr + ' ' + itemCurr);
                 
-                // Phân loại độc lập từng nhóm, không bị dồn nhầm
                 if (customType.includes('Food')) {
                     totals.food.min += range.min;
                     totals.food.max += range.max;
@@ -2093,16 +2050,15 @@ function updateCostSummary() {
                     totals.transit.min += range.min;
                     totals.transit.max += range.max;
                 } else {
-                    // Accommodation, Activity, v.v. mới vào attraction
                     totals.attraction.min += range.min;
                     totals.attraction.max += range.max;
                 }
             } 
-            // 3. Xử lý phần di chuyển (Transit)
+            // 3. Phần di chuyển (Transit)
             else if (item.classList.contains('transit-item')) {
                 let transitInputPrice = item.querySelector('.transit-price');
                 let priceStr = transitInputPrice ? transitInputPrice.value : '';
-                let range = extractPriceRange(priceStr);
+                let range = extractPriceRangeRaw(priceStr);
                 totals.transit.min += range.min;
                 totals.transit.max += range.max;
             }
@@ -2118,44 +2074,28 @@ function updateCostSummary() {
     document.getElementById('cost-total-amount').innerText = formatRangeDisplay(grandMin, grandMax);
 }
 
-function extractPriceRange(str) {
+// Hàm phụ trợ bóc tách khoảng giá thô cho custom card (quy đổi hết về VND gốc)
+function extractPriceRangeRaw(str) {
     if (!str) return { min: 0, max: 0 };
     let cleanStr = str.toString().trim();
-    if (!cleanStr) return { min: 0, max: 0 };
-
-    // Tách chuỗi theo dấu '-' để lấy min và max thô
-    let parts = cleanStr.split('-').map(p => p.trim());
+    let parts = cleanStr.split('-').map(p => parseFloat(p.replace(/[^0-9.]/g, '')) || 0);
     
-    let parseVal = (pStr) => {
-        if (!pStr) return 0;
-        // Xóa tất cả ký tự không phải số hoặc dấu chấm thập phân
-        let numClean = pStr.replace(/[^0-9.]/g, '');
-        return parseFloat(numClean) || 0;
-    };
+    let minVal = parts[0] || 0;
+    let maxVal = parts.length > 1 ? (parts[1] || minVal) : minVal;
+    if (minVal > maxVal) { let t = minVal; minVal = maxVal; maxVal = t; }
 
-    let minVal = parseVal(parts[0]);
-    let maxVal = parts.length > 1 ? parseVal(parts[1]) : minVal;
-
-    // Nếu min lớn hơn max thì đảo lại cho đúng trật tự
-    if (minVal > maxVal) {
-        let temp = minVal; minVal = maxVal; maxVal = temp;
-    }
-
-    // Nhận diện xem giá nhập vào đang là USD hay VND
     let isUSD = cleanStr.toUpperCase().includes('USD') || (!cleanStr.toUpperCase().includes('VND') && minVal > 0 && minVal < 1000);
 
-    // Chuẩn hóa toàn bộ về gốc VND để cộng dồn chính xác ở tổng chi phí
-    let baseMin = isUSD ? minVal * currentExchangeRate : minVal;
-    let baseMax = isUSD ? maxVal * currentExchangeRate : maxVal;
-
-    return { min: baseMin, max: baseMax };
+    return {
+        min: isUSD ? minVal * currentExchangeRate : minVal,
+        max: isUSD ? maxVal * currentExchangeRate : maxVal
+    };
 }
 
-// Hàm format hiển thị khoảng giá theo đơn vị VND / USD
+// Hàm hiển thị khoảng giá tổng chi phí
 function formatRangeDisplay(min, max) {
-    if (min === 0 && max === 0) return 'Free';
-    let formattedMin = convertSinglePrice(min.toString(), currentCurrencyUnit);
-    let formattedMax = convertSinglePrice(max.toString(), currentCurrencyUnit);
+    let formattedMin = convertSinglePriceNum(min, currentCurrencyUnit);
+    let formattedMax = convertSinglePriceNum(max, currentCurrencyUnit);
     
     if (min === max || max === 0) {
         return formattedMin;
@@ -2164,11 +2104,27 @@ function formatRangeDisplay(min, max) {
 }
 
 // Hàm format thô để hiển thị tiền theo đúng unit đang chọn
-function formatPriceDisplayRaw(num) {
-    if (num <= 0) return 'Free';
-    if (currentCurrencyUnit === 'USD') {
-        let valUSD = num / currentExchangeRate;
-        return `$${valUSD.toFixed(2)}`;
+function formatPriceDisplay(place, currency = currentCurrencyUnit) {
+    let min = parseFloat(place.price_min) || 0;
+    let max = parseFloat(place.price_max) || min;
+
+    if (min === 0 && max === 0) return 'Free'; // Card thường vẫn hiện Free nếu 0đ
+
+    let formattedMin = convertSinglePriceNum(min, currency);
+    let formattedMax = convertSinglePriceNum(max, currency);
+
+    if (min === max || max === 0) {
+        return formattedMin;
+    }
+    return `${formattedMin} - ${formattedMax}`;
+}
+
+// Hàm chuyển đổi số không bị gí chữ Free
+function convertSinglePriceNum(numVND, targetCurrency) {
+    let num = parseFloat(numVND) || 0;
+    if (targetCurrency === 'USD') {
+        let valInUSD = num / currentExchangeRate;
+        return `$${valInUSD.toFixed(2)}`;
     } else {
         return Math.round(num).toLocaleString('vi-VN') + ' VND';
     }
@@ -2206,4 +2162,42 @@ function onCustomPriceInput(element) {
     }
 
     updateCostSummary();
+}
+
+function openBlankCardPicker() {
+    ensurePlacePickerModalExists();
+    // Đánh dấu đây là thẻ custom trống
+    pendingPlaceData = { isCustom: true, name: 'Custom Blank Card' };
+
+    let dayBlocks = document.querySelectorAll('.day-block');
+    let listContainer = document.getElementById('picker-days-list');
+    listContainer.innerHTML = '';
+
+    if (dayBlocks.length === 0) {
+        let confirmAdd = confirm(`You don't have any days in your itinerary yet.\nClick OK to create a new day and add a Blank Card!`);
+        if (confirmAdd) {
+            let res = createAndGetNewDropzone();
+            if (res && res.dropzone) {
+                addPlaceToDay(res.dropzone, pendingPlaceData, res.dayId);
+            }
+        }
+        return;
+    }
+
+    document.getElementById('picker-place-name').innerText = `➕ Add Blank Card to Day`;
+
+    dayBlocks.forEach((block, index) => {
+        let dayNum = index + 1;
+        let dayId = block.id;
+        let dateInput = block.querySelector('.day-date-input');
+        let dateStr = dateInput && dateInput.value ? ` (${dateInput.value})` : '';
+
+        listContainer.innerHTML += `
+            <button onclick="confirmAddPlaceToDay('${dayId}', '${dayNum}')" style="background: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: left; font-size: 13px;">
+                🗓️ Day ${dayNum}${dateStr}
+            </button>
+        `;
+    });
+
+    document.getElementById('place-picker-modal').style.display = 'flex';
 }

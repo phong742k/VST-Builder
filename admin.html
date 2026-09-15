@@ -1255,12 +1255,21 @@
                             if (droppedPlaceDiv.classList.contains('card-food')) placeType = 'food';
                             else if (droppedPlaceDiv.classList.contains('card-activity')) placeType = 'activity';
                         }
+                        
+                        // --- ĐÃ BỔ SUNG: Lấy chuẩn khoảng giá min/max của card địa điểm ---
+                        let priceSpan = item.querySelector('.place-price');
+                        let rawMin = priceSpan ? parseFloat(priceSpan.getAttribute('data-raw-min')) || 0 : 0;
+                        let rawMax = priceSpan ? parseFloat(priceSpan.getAttribute('data-raw-max')) || rawMin : rawMin;
+
                         itemsData.push({
                             isCustom: false,
                             city: item.getAttribute('data-city') || '',
                             name: item.querySelector('.place-title')?.innerText || '',
                             timeToVisit: item.querySelector('.duration-input')?.value || 60,
-                            price: '', description: '',
+                            price_min: rawMin, // Lưu giá trị min chuẩn
+                            price_max: rawMax, // Lưu giá trị max chuẩn
+                            price: '', 
+                            description: '',
                             note: item.querySelector('.item-note')?.value || '',
                             type: placeType
                         });
@@ -1387,12 +1396,16 @@
                     const dropzone = addNewDay(dayInfo.date, dayInfo.startTime);
                     if (dayInfo.items && dayInfo.items.length > 0) {
                         dayInfo.items.forEach(item => {
-                            addPlaceToDay(dropzone, item, `day-${dayCount}`);
+                            // Đảm bảo truyền đủ price_min và price_max khi load mẫu lên builder
+                            let placeObj = {
+                                ...item,
+                                price_min: item.price_min !== undefined ? item.price_min : (item.price ? parseFloat(item.price.toString().replace(/[^0-9.]/g, '')) || 0 : 0),
+                                price_max: item.price_max !== undefined ? item.price_max : (item.price ? parseFloat(item.price.toString().replace(/[^0-9.]/g, '')) || 0 : 0)
+                            };
+                            addPlaceToDay(dropzone, placeObj, `day-${dayCount}`);
                         });
                     }
                 });
-            } else {
-                initBoard();
             }
 
             renderDepartureFlight(payload.departure);

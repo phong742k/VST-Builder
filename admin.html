@@ -1522,22 +1522,12 @@
             // Xử lý số thô
             let minPrice = rawMin ? (parseFloat(rawMin.replace(/[^0-9.]/g, '')) || 0) : 0;
             
-            // LOGIC TỰ ĐỒNG BỘ: Nếu có nhập Min nhưng bỏ trống Max -> Tự hiểu Max = Min
+            // Logic tự đồng bộ: Nếu có nhập Min nhưng bỏ trống Max -> Tự hiểu Max = Min
             let maxPrice = rawMax ? (parseFloat(rawMax.replace(/[^0-9.]/g, '')) || 0) : minPrice;
 
             // Đề phòng trường hợp nhập ngược max < min thì tự đảo lại cho đúng
             if (maxPrice < minPrice) {
                 let temp = minPrice; minPrice = maxPrice; maxPrice = temp;
-            }
-
-            // Tạo chuỗi hiển thị text tương thích ngược cho cột price cũ nếu cần
-            let displayPriceStr = 'Free';
-            if (minPrice > 0 || maxPrice > 0) {
-                if (minPrice === maxPrice) {
-                    displayPriceStr = minPrice.toLocaleString('vi-VN') + ' VND';
-                } else {
-                    displayPriceStr = `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')} VND`;
-                }
             }
 
             const placeRecord = {
@@ -1547,10 +1537,9 @@
                 city: document.getElementById('plc-city').value.trim(),
                 timeToVisit: parseInt(document.getElementById('plc-time').value) || 60,
                 
-                // Lưu thẳng số thô vào 2 cột chuẩn Supabase
+                // Chỉ lưu vào 2 cột số thô chuẩn Supabase
                 price_min: minPrice,
                 price_max: maxPrice,
-                price: displayPriceStr, // Cột text cũ để dự phòng hiển thị
 
                 image: document.getElementById('plc-image').value.trim(),
                 mapLink: document.getElementById('plc-map').value.trim(),

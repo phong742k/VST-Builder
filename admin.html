@@ -385,9 +385,9 @@
                         <input type="number" id="plc-time" value="60" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
                 </div>
-                <div>
-                    <label style="font-size: 12px; font-weight: bold; color: #555;">Mức giá / Chi phí</label>
-                    <input type="text" id="plc-price" placeholder="Ví dụ: 30,000 VND" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <div style="margin-bottom: 10px;">
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Price (VND - Để trống nếu Free)</label>
+                    <input type="number" id="plc-price" placeholder="e.g. 50000" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
                 </div>
                 <div>
                     <label style="font-size: 12px; font-weight: bold; color: #555;">Link Ảnh</label>
@@ -1504,39 +1504,52 @@
         }
 
         async function savePlaceData() {
-            const name = document.getElementById('plc-name').value.trim();
-            if (!name) { alert("Vui lòng nhập tên địa điểm!"); return; }
+        const name = document.getElementById('plc-name').value.trim();
+        if (!name) { alert("Vui lòng nhập tên địa điểm!"); return; }
 
-            const placeRecord = {
-                name: name,
-                type: document.getElementById('plc-type').value,
-                region: document.getElementById('plc-region').value,
-                city: document.getElementById('plc-city').value.trim(),
-                timeToVisit: parseInt(document.getElementById('plc-time').value) || 60,
-                price: document.getElementById('plc-price').value.trim(),
-                image: document.getElementById('plc-image').value.trim(),
-                mapLink: document.getElementById('plc-map').value.trim(),
-                description: document.getElementById('plc-desc').value.trim()
-            };
+        // Đọc giá trị từ ô nhập giá duy nhất
+        let rawPriceInput = document.getElementById('plc-price').value.trim();
+        
+        // Xử lý: Nếu bỏ trống thì gán bằng 0 (Free), ngược lại lấy số thô thuần túy
+        let numericPrice = rawPriceInput ? (parseFloat(rawPriceInput.replace(/[^0-9.]/g, '')) || 0) : 0;
 
-            let res;
-            if (currentEditingPlaceId) {
-                // Đang sửa: giữ nguyên id cũ
-                res = await supabaseClient.from('places').update(placeRecord).eq('id', currentEditingPlaceId);
-            } else {
-                // Thêm mới: bỏ qua id, để Supabase tự tăng 1, 2, 3...
-                res = await supabaseClient.from('places').insert([placeRecord]);
-            }
+        const placeRecord = {
+            name: name,
+            type: document.getElementById('plc-type').value,
+            region: document.getElementById('plc-region').value,
+            city: document.getElementById('plc-city').value.trim(),
+            timeToVisit: parseInt(document.getElementById('plc-time').value) || 60,
+            
+            // ĐẨY VÀO 2 CỘT SỐ THÔ MỚI (Ghi đè giá trị giống nhau vì đây là giá đơn cố định)
+            price_min: numericPrice,
+            price_max: numericPrice,
+            
+            // Giữ lại cột price text cũ (hoặc ghi chuỗi hiển thị) để tương thích ngược nếu cần
+            price: numericPrice > 0 ? numericPrice.toLocaleString('vi-VN') + ' VND' : 'Free',
 
-            if (res.error) {
-                alert("Lỗi lưu địa điểm: " + res.error.message);
-            } else {
-                alert("✨ Lưu địa điểm thành công!");
-                closePlaceModal();
-                loadAdminPlaces();
-                fetchPlacesLibrary();
-            }
+            image: document.getElementById('plc-image').value.trim(),
+            mapLink: document.getElementById('plc-map').value.trim(),
+            description: document.getElementById('plc-desc').value.trim()
+        };
+
+        let res;
+        if (currentEditingPlaceId) {
+            // Đang sửa: giữ nguyên id cũ
+            res = await supabaseClient.from('places').update(placeRecord).eq('id', currentEditingPlaceId);
+        } else {
+            // Thêm mới: bỏ qua id, để Supabase tự sinh ID
+            res = await supabaseClient.from('places').insert([placeRecord]);
         }
+
+        if (res.error) {
+            alert("Lỗi lưu địa điểm: " + res.error.message);
+        } else {
+            alert("✨ Lưu địa điểm thành công!");
+            closePlaceModal();
+            loadAdminPlaces();
+            fetchPlacesLibrary();
+        }
+    }
 
         async function deletePlace(id) {
             if (!confirm("Bạn có chắc chắn muốn xóa địa điểm này không?")) return;

@@ -478,6 +478,14 @@
         let dayCount = 0;
         let currentTemplateId = null;
         let currentItineraryId = null;
+        
+        function formatAdminPrice(place) {
+            let min = parseFloat(place.price_min) || 0;
+            let max = parseFloat(place.price_max) || min;
+            if (min === 0 && max === 0) return 'Free';
+            if (min === max) return min.toLocaleString('vi-VN') + ' VND';
+            return min.toLocaleString('vi-VN') + ' - ' + max.toLocaleString('vi-VN') + ' VND';
+        }
 
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             currentUser = session?.user || null;
@@ -657,7 +665,7 @@
                         <h4>${place.name}</h4>
                         ${addressHtml}
                         ${mapButtonHtml}
-                        <p style="margin-top: 4px;">⏱️ ${place.timeToVisit} mins | 💰 ${place.price}</p>
+                        <p style="margin-top: 4px;">⏱️ ${place.timeToVisit} mins | 💰 ${formatAdminPrice(place)}</p>
                         <p class="place-desc">${place.description}</p>
                     </div>
                 `;
@@ -974,7 +982,7 @@
                                 <label style="font-size:12px; color:#555;">Duration:</label>
                                 <input type="number" class="duration-input" value="${placeData.timeToVisit || 60}" step="15" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
                                 <span style="font-size:12px; color:#555;">mins</span>
-                                <span class="place-price" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${placeData.price || ''}</span>
+                                <span class="place-price" data-raw-min="${placeData.price_min || 0}" data-raw-max="${placeData.price_max || 0}" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${formatAdminPrice(placeData)}</span>
                             </div>
                             <div style="margin-top: 8px;">
                                 <input type="text" class="item-note" value="${placeData.note || ''}" placeholder="Personal Note" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
@@ -1148,12 +1156,19 @@
                             if (droppedPlaceDiv.classList.contains('card-food')) placeType = 'food';
                             else if (droppedPlaceDiv.classList.contains('card-activity')) placeType = 'activity';
                         }
+                        let priceSpan = item.querySelector('.place-price');
+                        let rawMin = priceSpan ? parseFloat(priceSpan.getAttribute('data-raw-min')) || 0 : 0;
+                        let rawMax = priceSpan ? parseFloat(priceSpan.getAttribute('data-raw-max')) || rawMin : rawMin;
+
                         itemsData.push({
                             isCustom: false,
                             city: item.getAttribute('data-city') || '',
                             name: item.querySelector('.place-title')?.innerText || '',
                             timeToVisit: item.querySelector('.duration-input')?.value || 60,
-                            price: '', description: '',
+                            price_min: rawMin,
+                            price_max: rawMax,
+                            price: '', 
+                            description: '',
                             note: item.querySelector('.item-note')?.value || '',
                             type: placeType
                         });
@@ -1489,7 +1504,7 @@
                             <img src="${p.image || ''}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/50'">
                             <div>
                                 <strong>${p.name}</strong> <span style="background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 11px;">${p.city} (${p.region})</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Type: ${p.type} | Time: ${p.timeToVisit}m | Price: ${p.price || 'Free'}</div>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Type: ${p.type} | Time: ${p.timeToVisit}m | Price: ${formatAdminPrice(p)}</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 6px;">

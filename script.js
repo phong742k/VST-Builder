@@ -636,12 +636,9 @@ function recalculateTime(dayId) {
 }
 
 function savePDF() {
-    // Chặn ngay lập tức nếu khách chưa đăng nhập
     if (!currentUser) {
         let wantLogin = confirm("You need to sign in to export the itinerary as a PDF!");
-        if (wantLogin) {
-            handleAuth();
-        }
+        if (wantLogin) handleAuth();
         return;
     }
 
@@ -659,74 +656,61 @@ function savePDF() {
             }
         });
     });
-    const routeString = routeCities.length > 0 ? routeCities.join(" -> ") : "Custom Itinerary";
+    const routeString = routeCities.length > 0 ? routeCities.join(" ✈️ ") : "Custom Itinerary";
     const totalDays = days.length;
     const totalNights = totalDays > 1 ? totalDays - 1 : 0;
-    const durationString = totalDays > 0 ? `${totalDays}D${totalNights}N` : "N/A";
+    const durationString = totalDays > 0 ? `${totalDays} Days, ${totalNights} Nights` : "N/A";
 
+    // 1. TRANG BÌA & THÔNG TIN CHUNG
     let htmlContent = `
-        <div style="padding: 30px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333;">
-            <h1 style="text-align: center; color: #0d47a1; margin-bottom: 2px;">Your Vietnam Itinerary</h1>
-            <p style="text-align: center; color: #e91e63; margin-top: 0; font-weight: bold; font-size: 14px;">from @vietnam.solotrip</p>
-            
-            <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 12px; border-radius: 6px; margin-top: 20px; font-size: 14px; line-height: 1.5;">
-                <p style="margin: 0 0 5px 0;"><strong>Route:</strong> ${routeString}</p>
-                <p style="margin: 0;"><strong>Duration:</strong> ${durationString}</p>
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b;">
+            <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+                <h1 style="color: #0d47a1; font-size: 28px; margin-bottom: 5px; text-transform: uppercase;">Your Travel Itinerary</h1>
+                <p style="color: #0284c7; font-weight: bold; font-size: 14px; margin-top: 0; letter-spacing: 1px;">VIETNAM SOLO TRIP</p>
+                <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 14px; color: #475569;">
+                    <span>📍 <strong>Route:</strong> ${routeString}</span>
+                    <span>⏳ <strong>Duration:</strong> ${durationString}</span>
+                </div>
             </div>
     `;
 
+    // 2. CHUYẾN BAY ĐẾN
     const arrFrom = document.querySelector('.arr-from') ? document.querySelector('.arr-from').value.toUpperCase() : '';
     const arrTo = document.querySelector('.arr-to') ? document.querySelector('.arr-to').value.toUpperCase() : '';
-    const arrDate = document.querySelector('.arr-date') ? document.querySelector('.arr-date').value : '';
-    const arrTime = document.querySelector('.arr-time') ? document.querySelector('.arr-time').value : '';
-    const arrHr = document.querySelector('.arr-dur-hr') ? document.querySelector('.arr-dur-hr').value : '0';
-    const arrMin = document.querySelector('.arr-dur-min') ? document.querySelector('.arr-dur-min').value : '0';
-    const arrPnr = document.querySelector('.arr-pnr') ? document.querySelector('.arr-pnr').value : '';
-    const arrNote = document.querySelector('.arr-note') ? document.querySelector('.arr-note').value : '';
-    const arrHasTransit = document.querySelector('.arr-has-transit') ? document.querySelector('.arr-has-transit').checked : false;
-    
-    let arrLayoversHtml = '';
-    if (arrHasTransit) {
-        const layovers = document.querySelectorAll('#arr-layovers-container .layover-item');
-        layovers.forEach((lo, index) => {
-            const apt = lo.querySelector('.layover-airport').value.toUpperCase();
-            const hr = lo.querySelector('.layover-hr').value;
-            const min = lo.querySelector('.layover-min').value;
-            if(apt || hr > 0 || min > 0) {
-                arrLayoversHtml += `<li><strong>Layover ${index + 1}:</strong> At ${apt || 'Unknown'} (${hr} hrs ${min} mins)</li>`;
-            }
-        });
-    }
-    
-    if (arrFrom || arrTo || arrPnr) {
+    if (arrFrom || arrTo) {
+        const arrDate = document.querySelector('.arr-date').value;
+        const arrTime = document.querySelector('.arr-time').value;
+        const arrPnr = document.querySelector('.arr-pnr').value;
         htmlContent += `
-            <div style="margin-top: 20px; background: #ede7f6; padding: 12px; border-radius: 6px; border-left: 4px solid #673ab7;">
-                <h3 style="margin: 0 0 6px 0; color: #512da8; font-size: 16px;">✈️ Arrival Flight: ${arrFrom} -> ${arrTo}</h3>
-                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555; line-height: 1.5;">
-                    <li><strong>Date:</strong> ${arrDate ? new Date(arrDate).toLocaleDateString('en-GB') : 'TBD'} | <strong>Time:</strong> ${arrTime}</li>
-                    <li><strong>Total Duration:</strong> ${arrHr} hrs ${arrMin} mins</li>
-                    ${arrLayoversHtml}
-                    ${arrPnr ? `<li><strong>Booking Ref:</strong> ${arrPnr}</li>` : ''}
-                    ${arrNote ? `<li><strong>Note:</strong> ${arrNote}</li>` : ''}
-                </ul>
+            <div class="prevent-split" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                <h3 style="margin: 0 0 10px 0; color: #1d4ed8; font-size: 16px;">✈️ Arrival Flight: ${arrFrom} to ${arrTo}</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #334155;">
+                    <div><strong>Date:</strong> ${arrDate ? new Date(arrDate).toLocaleDateString('en-GB') : 'TBD'}</div>
+                    <div><strong>Time:</strong> ${arrTime}</div>
+                    ${arrPnr ? `<div><strong>Booking Ref:</strong> ${arrPnr}</div>` : ''}
+                </div>
             </div>
         `;
     }
 
-    days.forEach(day => {
+    // 3. LỊCH TRÌNH CHI TIẾT (TIMELINE STYLE)
+    days.forEach((day, index) => {
         const dayTitle = day.querySelector('h3').innerText;
         const dayDate = day.querySelector('.day-date-input').value;
-        const dateString = dayDate ? new Date(dayDate).toLocaleDateString('en-GB') : 'TBD';
+        const dateString = dayDate ? new Date(dayDate).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }) : 'TBD';
 
         htmlContent += `
-            <div style="margin-top: 25px; border-bottom: 2px solid #2196f3; padding-bottom: 5px; margin-bottom: 15px;">
-                <h2 style="margin: 0; color: #2196f3; font-size: 20px;">${dayTitle} - <span style="color:#555;">${dateString}</span></h2>
+            <div class="prevent-split" style="margin-top: 30px; margin-bottom: 15px;">
+                <h2 style="margin: 0; color: #0284c7; font-size: 18px; border-bottom: 2px solid #bae6fd; padding-bottom: 5px;">
+                    ${dayTitle} <span style="color: #64748b; font-size: 14px; font-weight: normal;">- ${dateString}</span>
+                </h2>
             </div>
+            <div style="margin-left: 10px; border-left: 2px solid #e2e8f0; padding-left: 20px; padding-bottom: 10px;">
         `;
 
         const items = day.querySelectorAll('.timeline-item');
         if(items.length === 0) {
-            htmlContent += `<p style="color: #888; font-style: italic;">Free day / No activities planned yet.</p>`;
+            htmlContent += `<p style="color: #94a3b8; font-style: italic; font-size: 13px;">Free day / No activities planned yet.</p>`;
         }
 
         items.forEach(item => {
@@ -734,105 +718,89 @@ function savePDF() {
                 const method = item.querySelector('.transit-method').value;
                 const time = item.querySelector('.transit-minutes').value;
                 htmlContent += `
-                    <div style="margin: 8px 0 8px 25px; padding-left: 10px; border-left: 2px dashed #bbb; color: #666; font-size: 13px; font-style: italic;">
-                        🚕 Transit: ${method} (${time} mins)
+                    <div class="prevent-split" style="margin: 10px 0; color: #64748b; font-size: 12px; font-style: italic; position: relative;">
+                        <span style="position: absolute; left: -26px; background: white; color: #cbd5e1;">🚕</span>
+                        Transit: ${method} (~${time} mins)
                     </div>
                 `;
             } else {
                 const timeBadge = item.querySelector('.time-badge').innerText;
                 const startTime = timeBadge.split(' - ')[0]; 
-                
-                let title = "";
-                let detailsList = "";
+                let title = "", detailsList = "", dotColor = "#0284c7";
 
                 if (item.classList.contains('custom-item')) {
-                    const customType = item.querySelector('.custom-type') ? item.querySelector('.custom-type').value : 'Event';
+                    const customType = item.querySelector('.custom-type').value;
                     title = item.querySelector('.custom-title').value || customType;
                     const price = item.querySelector('.custom-price').value;
                     const note = item.querySelector('.custom-note').value;
-                    const link = item.querySelector('.custom-link').value;
-                    
-                    detailsList += `<li><strong>Time:</strong> ${timeBadge}</li>`;
-                    if (price) detailsList += `<li><strong>Price/Cost:</strong> ${price}</li>`;
-                    if (note) detailsList += `<li><strong>Note:</strong> ${note}</li>`;
-                    if (link) detailsList += `<li><strong>Booking/Link:</strong> ${link}</li>`;
+                    if (customType.includes('Food')) dotColor = "#f59e0b";
+                    if (customType.includes('Accommodation')) dotColor = "#8b5cf6";
+
+                    if (price) detailsList += `<span style="margin-right: 15px;">💰 <strong>Cost:</strong> ${price}</span>`;
+                    if (note) detailsList += `<span>📝 <strong>Note:</strong> ${note}</span>`;
                 } else {
                     title = item.querySelector('.place-title').innerText;
                     const durationText = item.querySelector('.duration-input').value;
                     const priceText = item.querySelector('.place-price').innerText.replace('| Price: ', '');
                     const noteText = item.querySelector('.item-note').value;
 
-                    detailsList += `<li><strong>Time:</strong> ${timeBadge}</li>`;
-                    detailsList += `<li><strong>Duration:</strong> ${durationText} mins</li>`;
-                    if (priceText && priceText !== 'Free') detailsList += `<li><strong>Price:</strong> ${priceText}</li>`;
-                    if (noteText) detailsList += `<li><strong>Note:</strong> ${noteText}</li>`;
+                    if (item.classList.contains('card-food')) dotColor = "#f59e0b";
+                    if (item.classList.contains('card-activity')) dotColor = "#10b981";
+
+                    detailsList += `<span style="margin-right: 15px;">⏱️ <strong>Duration:</strong> ${durationText} mins</span>`;
+                    if (priceText && priceText !== 'Free') detailsList += `<span style="margin-right: 15px;">💰 <strong>Price:</strong> ${priceText}</span>`;
+                    if (noteText) detailsList += `<div style="margin-top: 4px;">📝 <strong>Note:</strong> ${noteText}</div>`;
                 }
 
                 htmlContent += `
-                    <div style="margin-bottom: 15px; background: #fafafa; border-radius: 6px; padding: 12px; border-left: 4px solid #4caf50;">
-                        <h4 style="margin: 0 0 6px 0; color: #333; font-size: 15px;">
-                            <span style="color: #d32f2f;">${startTime}</span> | ${title}
+                    <div class="prevent-split" style="margin-bottom: 15px; position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="position: absolute; left: -25.5px; top: 15px; width: 10px; height: 10px; border-radius: 50%; background: ${dotColor}; border: 2px solid white;"></div>
+                        <h4 style="margin: 0 0 6px 0; color: #0f172a; font-size: 15px;">
+                            <span style="color: ${dotColor}; font-weight: bold; margin-right: 8px;">${startTime}</span> ${title}
                         </h4>
-                        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555; line-height: 1.5;">
+                        <div style="font-size: 12px; color: #475569; line-height: 1.5;">
                             ${detailsList}
-                        </ul>
+                        </div>
                     </div>
                 `;
             }
         });
+        htmlContent += `</div>`; // Đóng thẻ border-left của timeline
     });
 
+    // 4. CHUYẾN BAY VỀ
     const depFrom = document.querySelector('.dep-from') ? document.querySelector('.dep-from').value.toUpperCase() : '';
-    const depTo = document.querySelector('.dep-to') ? document.querySelector('.dep-to').value.toUpperCase() : '';
-    const depDate = document.querySelector('.dep-date') ? document.querySelector('.dep-date').value : '';
-    const depTime = document.querySelector('.dep-time') ? document.querySelector('.dep-time').value : '';
-    const depHr = document.querySelector('.dep-dur-hr') ? document.querySelector('.dep-dur-hr').value : '0';
-    const depMin = document.querySelector('.dep-dur-min') ? document.querySelector('.dep-dur-min').value : '0';
-    const depPnr = document.querySelector('.dep-pnr') ? document.querySelector('.dep-pnr').value : '';
-    const depNote = document.querySelector('.dep-note') ? document.querySelector('.dep-note').value : '';
-    const depHasTransit = document.querySelector('.dep-has-transit') ? document.querySelector('.dep-has-transit').checked : false;
-
-    let depLayoversHtml = '';
-    if (depHasTransit) {
-        const layovers = document.querySelectorAll('#dep-layovers-container .layover-item');
-        layovers.forEach((lo, index) => {
-            const apt = lo.querySelector('.layover-airport').value.toUpperCase();
-            const hr = lo.querySelector('.layover-hr').value;
-            const min = lo.querySelector('.layover-min').value;
-            if(apt || hr > 0 || min > 0) {
-                depLayoversHtml += `<li><strong>Layover ${index + 1}:</strong> At ${apt || 'Unknown'} (${hr} hrs ${min} mins)</li>`;
-            }
-        });
-    }
-
-    if (depFrom || depTo || depPnr) {
+    if (depFrom) {
+        const depTo = document.querySelector('.dep-to').value.toUpperCase();
+        const depDate = document.querySelector('.dep-date').value;
+        const depTime = document.querySelector('.dep-time').value;
         htmlContent += `
-            <div style="margin-top: 25px; background: #ede7f6; padding: 12px; border-radius: 6px; border-left: 4px solid #673ab7;">
-                <h3 style="margin: 0 0 6px 0; color: #512da8; font-size: 16px;">✈️ Departure Flight: ${depFrom} -> ${depTo}</h3>
-                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555; line-height: 1.5;">
-                    <li><strong>Date:</strong> ${depDate ? new Date(depDate).toLocaleDateString('en-GB') : 'TBD'} | <strong>Time:</strong> ${depTime}</li>
-                    <li><strong>Total Duration:</strong> ${depHr} hrs ${depMin} mins</li>
-                    ${depLayoversHtml}
-                    ${depPnr ? `<li><strong>Booking Ref:</strong> ${depPnr}</li>` : ''}
-                    ${depNote ? `<li><strong>Note:</strong> ${depNote}</li>` : ''}
-                </ul>
+            <div class="prevent-split" style="margin-top: 30px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+                <h3 style="margin: 0 0 10px 0; color: #6d28d9; font-size: 16px;">✈️ Departure Flight: ${depFrom} to ${depTo}</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #334155;">
+                    <div><strong>Date:</strong> ${depDate ? new Date(depDate).toLocaleDateString('en-GB') : 'TBD'}</div>
+                    <div><strong>Time:</strong> ${depTime}</div>
+                </div>
             </div>
         `;
     }
 
-    htmlContent += `</div>`;
-    renderArea.innerHTML = htmlContent;
-    renderArea.style.display = 'block';
+    // 5. TỔNG CHI PHÍ
+    const totalAmount = document.getElementById('cost-total-amount') ? document.getElementById('cost-total-amount').innerText : '0 VND';
+    htmlContent += `
+        <div class="prevent-split" style="margin-top: 30px; text-align: right; border-top: 2px solid #e2e8f0; padding-top: 15px;">
+            <h3 style="margin: 0; color: #0f172a; font-size: 16px;">Estimated Total Cost</h3>
+            <p style="margin: 5px 0 0 0; color: #0284c7; font-size: 22px; font-weight: bold;">${totalAmount}</p>
+        </div>
+    </div>`;
 
-    html2pdf().set({
-        margin: 0.2,
-        filename: 'Vietnam_Solo_Trip_Itinerary.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-    }).from(renderArea).save().then(() => {
-        renderArea.style.display = 'none';
-    });
+    // Nhét HTML vào khung render
+    renderArea.innerHTML = htmlContent;
+
+    // Dùng setTimeout 100ms để trình duyệt kịp cập nhật giao diện trước khi bật popup in
+    setTimeout(() => {
+        window.print();
+    }, 100);
 }
 
 let currentModalPlace = null; // Biến lưu tạm địa điểm đang mở trên modal chi tiết

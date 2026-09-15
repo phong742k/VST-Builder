@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Vietnam Solo Trip - Itinerary Builder</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f0f2f5; }
         .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -129,6 +128,34 @@
         }
         .btn-export-action:hover {
             background: #059669;
+        }
+
+        /* ================= CSS CHUYÊN DỤNG CHO IN ẤN (PDF) ================= */
+        @media print {
+            /* 1. Ẩn toàn bộ giao diện app hiện tại */
+            body { background: white; margin: 0; padding: 0; }
+            .header, #main-app-container, #dashboard-selector, #guest-lock-screen, 
+            .static-action-buttons, div[style*="position: fixed"] { 
+                display: none !important; 
+            }
+
+            /* 2. Hiển thị khu vực in và set khổ giấy A4 */
+            #pdf-render-area { 
+                display: block !important; 
+                width: 100%; 
+                max-width: 100%;
+                color: black; 
+                padding: 0 !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 15mm; /* Căn lề giấy */
+            }
+
+            /* 3. Class chống cắt đôi nội dung giữa 2 trang */
+            .prevent-split {
+                page-break-inside: avoid;
+            }
         }
     </style>
 </head>

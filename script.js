@@ -666,7 +666,7 @@ function savePDF() {
         <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b;">
             <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
                 <h1 style="color: #0d47a1; font-size: 28px; margin-bottom: 5px; text-transform: uppercase;">Your Travel Itinerary</h1>
-                <p style="color: #0284c7; font-weight: bold; font-size: 14px; margin-top: 0; letter-spacing: 1px;">VIETNAM SOLO TRIP</p>
+                <p style="color: #0284c7; font-weight: bold; font-size: 14px; margin-top: 0; letter-spacing: 1px;">from VIETNAM SOLO TRIP</p>
                 <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 14px; color: #475569;">
                     <span>📍 <strong>Route:</strong> ${routeString}</span>
                     <span>⏳ <strong>Duration:</strong> ${durationString}</span>

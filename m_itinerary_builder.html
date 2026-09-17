@@ -153,6 +153,7 @@
                 <button onclick="setType('attraction')" id="btn-type-attraction" class="type-btn active-attraction">Locations</button>
                 <button onclick="setType('food')" id="btn-type-food" class="type-btn">F&B</button>
                 <button onclick="setType('activity')" id="btn-type-activity" class="type-btn">Activities</button>
+                <button onclick="setType('saved')" id="btn-type-saved" class="type-btn" style="color: #e11d48;">Saved</button>
             </div>
             <div id="region-tabs" style="display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px;">
                 <button onclick="setRegion('All')" id="btn-reg-All" style="padding:6px 12px; border-radius:15px; border:1px solid #cbd5e1; background:#0f172a; color:white; font-size:11px;">All</button>
@@ -167,7 +168,7 @@
 
         <!-- TAB 3: EXPLORE SAMPLES -->
         <div id="tab-samples" class="tab-pane">
-            <h3 style="margin: 0 0 10px 0; color: #0f172a; font-size: 16px;">🌟 Explore Templates</h3>
+            <h3 style="margin: 0 0 10px 0; color: #0f172a; font-size: 16px;">🌟 Signature Tours</h3>
             <p style="font-size: 12px; color: #64748b; margin-top: 0;">Select a ready-made route to customize.</p>
             <div id="sample-filter-tags" style="display: flex; gap: 6px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px;"></div>
             <div id="sample-trips-grid" style="display: flex; flex-direction: column; gap: 15px;"></div>
@@ -212,10 +213,10 @@
         </div>
     </div>
 
-<div class="mobile-bottom-bar" id="mobile-bottom-bar" style="display: none;">
-        <button class="mob-tab-btn active" id="btn-tab-library" onclick="activateMobileTab('library')"><span>📍</span> Library</button>
+    <div class="mobile-bottom-bar" id="mobile-bottom-bar" style="display: none;">
+        <button class="mob-tab-btn active" id="btn-tab-library" onclick="activateMobileTab('library')"><span>📍</span> Locations</button>
         <button class="mob-tab-btn" id="btn-tab-itinerary" onclick="activateMobileTab('itinerary')"><span>🗺️</span> Itinerary</button>
-        <button class="mob-tab-btn" id="btn-tab-samples" onclick="activateMobileTab('samples')"><span>🌟</span> Samples</button>
+        <button class="mob-tab-btn" id="btn-tab-samples" onclick="activateMobileTab('samples')"><span>🌟</span> Explore</button>
         <button class="mob-tab-btn" id="btn-tab-profile" onclick="activateMobileTab('profile')"><span>👤</span> Profile</button>
     </div>
 
@@ -853,6 +854,17 @@
                     </select>
                 </div>
                 <button onclick="saveProfileInfo()" style="background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; margin-top: 5px;">Save Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAVED LOCATIONS MODAL CHO MOBILE -->
+    <div id="saved-locations-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: white; width: 600px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; max-height: 80vh; overflow-y: auto;">
+            <button onclick="closeSavedLocationsModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+            <h2 style="margin-top: 0; color: #e11d48; margin-bottom: 20px;">❤️ Your Saved Locations</h2>
+            <div id="saved-locations-list-container" style="display: flex; flex-direction: column; gap: 10px;">
+                <p style="color: #777; font-size: 13px;">Loading saved locations...</p>
             </div>
         </div>
     </div>

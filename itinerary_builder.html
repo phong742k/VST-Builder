@@ -174,9 +174,12 @@
             <div class="quick-actions-bar" style="flex-direction: column; gap: 8px;">
                 <div style="display: flex; gap: 8px; width: 100%;">
                     <button class="btn-quick-new" onclick="startNewItinerary()" style="flex: 1;">➕ New Trip</button>
+                    <button onclick="openSampleTripsModal()" style="width: 100%; padding: 8px 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; background: #8e44ad; color: white;">🌟 Signature Tours</button>
+                </div>
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <button onclick="openSavedLocationsModal()" style="width: 100%; padding: 8px 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; background: #e11d48; color: white;">❤️ Saved Locations</button>
                     <button class="btn-quick-drafts" onclick="openDraftsModal()" style="flex: 1;">📂 My Drafts</button>
                 </div>
-                <button onclick="openSampleTripsModal()" style="width: 100%; padding: 8px 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; background: #8e44ad; color: white;">🌟 Explore Sample Trips</button>
             </div>
 
             <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #555;">Drag or Click to add blank card:</div>
@@ -186,9 +189,10 @@
             <hr>
 
             <div class="type-tabs">
-                <button onclick="setType('attraction')" class="active-attraction" id="btn-type-attraction">📍 Locations</button>
-                <button onclick="setType('food')" id="btn-type-food">🍲 F&B</button>
-                <button onclick="setType('activity')" id="btn-type-activity">🏄 Activities</button>
+                <button onclick="setType('attraction')" class="active-attraction" id="btn-type-attraction">Locations</button>
+                <button onclick="setType('food')" id="btn-type-food">F&B</button>
+                <button onclick="setType('activity')" id="btn-type-activity">Activities</button>
+                <button onclick="setType('saved')" id="btn-type-saved" style="background: #f1f5f9; color: #e11d48;">❤️ Saved</button>
             </div>
 
             <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #555;">Select Region:</div>
@@ -1012,6 +1016,27 @@
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button onclick="dismissMobilePopup()" style="flex: 1; padding: 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Stay Here</button>
                 <button onclick="window.location.href='m_itinerary_builder.html'" style="flex: 1; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Switch Now</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="saved-locations-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: white; width: 600px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; max-height: 80vh; overflow-y: auto;">
+            <button onclick="closeSavedLocationsModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+            <h2 style="margin-top: 0; color: #e11d48; margin-bottom: 20px;">❤️ Your Saved Locations</h2>
+            <div id="saved-locations-list-container" style="display: flex; flex-direction: column; gap: 10px;">
+                <p style="color: #777; font-size: 13px;">Loading saved locations...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAVED LOCATIONS MODAL (Hộp thoại hiển thị danh sách địa điểm đã lưu) -->
+    <div id="saved-locations-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: white; width: 600px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; max-height: 80vh; overflow-y: auto;">
+            <button onclick="closeSavedLocationsModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+            <h2 style="margin-top: 0; color: #e11d48; margin-bottom: 20px;">❤️ Your Saved Locations</h2>
+            <div id="saved-locations-list-container" style="display: flex; flex-direction: column; gap: 10px;">
+                <p style="color: #777; font-size: 13px;">Loading saved locations...</p>
             </div>
         </div>
     </div>

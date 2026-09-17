@@ -235,16 +235,24 @@ function renderLibrary(places) {
         let mapButtonHtml = place.mapLink ? `<a href="${place.mapLink}" target="_blank" style="font-size: 11px; color: #2196f3; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 4px;">🗺️ Open in Google Maps</a>` : '';
 
         // Nút Add to my Trip gọi riêng hàm addPlaceQuickly và chặn sự kiện click lan ra ngoài card
+        let isSaved = mySavedPlaceIds.has(place.id);
+        let saveBtnBg = isSaved ? '#fee2e2' : '#f1f5f9';
+        let saveBtnColor = isSaved ? '#e11d48' : '#475569';
+        let saveBtnText = isSaved ? '❤️ Saved' : '🤍 Save';
+
         let safeJson = encodeURIComponent(JSON.stringify(place));
         card.innerHTML = `
             <img src="${place.image}" alt="">
-            <div class="place-info" style="flex-grow: 1;">
+            <div class="place-info" style="flex-grow: 1; padding-right: 15px;">
                 <h4>${place.name}</h4>
                 ${addressHtml}
                 ${mapButtonHtml}
                 <p style="margin-top: 4px;">⏱️ ${place.timeToVisit} mins | 💰 ${formatPriceDisplay(place)}</p>
                 <p class="place-desc">${place.description}</p>
-                <button onclick="event.stopPropagation(); addPlaceQuickly('${safeJson}')" style="margin-top: 6px; background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">➕ Add to my Trip</button>
+                <div style="display: flex; gap: 6px; margin-top: 6px; align-items: center;">
+                    <button onclick="event.stopPropagation(); addPlaceQuickly('${safeJson}')" style="background: #0284c7; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">➕ Add to my Trip</button>
+                    <button onclick="toggleSavePlace(${place.id}, event)" style="background: ${saveBtnBg}; color: ${saveBtnColor}; border: 1px solid #cbd5e1; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">${saveBtnText}</button>
+                </div>
             </div>
         `;
         // Gắn sự kiện click mở modal chi tiết vào chính cái card
@@ -545,10 +553,10 @@ function addPlaceToDay(dropzone, placeData, dayId) {
                     <div style="flex-grow: 1;">
                         <div class="custom-inputs">
                             <select class="custom-type" style="font-weight:bold; margin-bottom: 6px;" onchange="updateCostSummary()">
+                                <option>🎯 Activity/Destination</option>                                
                                 <option>🏨 Accommodation</option>
                                 <option>🍽️ Food & Drink</option>
                                 <option>🚙 Transport (Long distance / Car)</option>
-                                <option>🎯 Activity/Destination</option>
                             </select>
                             <input type="text" class="custom-title" placeholder="Title (e.g., Hotel Name, Limousine bus to Sapa, ABC Café,...)">
                             
@@ -588,11 +596,11 @@ function addPlaceToDay(dropzone, placeData, dayId) {
                         <div class="custom-inputs">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
                                 <select class="custom-type" style="font-weight:bold; flex-grow: 1; margin-right: 10px;" onchange="updateCostSummary()">
+                                    <option>🎯 Activity/Destination</option>
                                     <option>🏨 Accommodation</option>
                                     <option>🍽️ Food & Drink</option>
                                     <option>🚙 Transport (Long distance / Car)</option>
-                                    <option>🎯 Activity/Destination</option>
-                                </select>
+                                                                    </select>
                                 <button class="btn-remove" onclick="removeItem(this)">Remove</button>
                             </div>
                             <input type="text" class="custom-title" placeholder="Title (e.g., Hotel Name, Limousine bus to Sapa, ABC Café,...)">
@@ -2385,7 +2393,8 @@ function renderMobileProfileStatus() {
                     <button onclick="handleAuth()" style="background: #fee2e2; color: #b91c1c; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;">Logout</button>
                 </div>
             </div>
-            
+
+            <button onclick="openSavedLocationsModal()" style="width: 100%; background: #e11d48; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-bottom: 15px; cursor: pointer;">❤️ Saved Locations</button>
             <h4 style="margin: 0 0 15px 0; color: #0f172a; border-bottom: 1px solid #eee; padding-bottom: 5px;">📂 My Saved Drafts</h4>
             <div id="drafts-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
@@ -2643,4 +2652,191 @@ window.addBlankCardDirectly = function(dayId) {
         let blankPlace = { isCustom: true, name: 'Custom Blank Card' };
         addPlaceToDay(dropzone, blankPlace, dayId);
     }
+};
+
+// --- QUẢN LÝ TÍNH NĂNG SAVED LOCATIONS & TRÁI TIM ---
+let mySavedPlaceIds = new Set();
+
+// 1. Tải danh sách ID đã lưu của user khi đăng nhập
+async function fetchUserSavedPlaces() {
+    if (!currentUser) {
+        mySavedPlaceIds.clear();
+        return;
+    }
+    const { data, error } = await supabaseClient
+        .from('saved_locations')
+        .select('place_id')
+        .eq('user_id', currentUser.id);
+
+    if (!error && data) {
+        mySavedPlaceIds = new Set(data.map(item => item.place_id));
+    }
+}
+
+// Gọi fetch ngay khi state auth thay đổi (đặt trong onAuthStateChange hoặc tự chạy ngầm)
+supabaseClient.auth.onAuthStateChange(async () => {
+    await fetchUserSavedPlaces();
+});
+
+// 2. Hàm Toggle Thả Tim (Lưu / Bỏ lưu)
+async function toggleSavePlace(placeId, event) {
+    if (event) event.stopPropagation(); // Tránh bị click lan ra mở modal card
+    if (!currentUser) {
+        let wantLogin = confirm("Please sign in with Google to save favorite locations!");
+        if (wantLogin) handleAuth();
+        return;
+    }
+
+    if (mySavedPlaceIds.has(placeId)) {
+        // Đã lưu -> Xoá khỏi database
+        const { error } = await supabaseClient
+            .from('saved_locations')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('place_id', placeId);
+
+        if (!error) {
+            mySavedPlaceIds.delete(placeId);
+        }
+    } else {
+        // Chưa lưu -> Thêm vào database
+        const { error } = await supabaseClient
+            .from('saved_locations')
+            .insert([{ user_id: currentUser.id, place_id: placeId }]);
+
+        if (!error) {
+            mySavedPlaceIds.add(placeId);
+        }
+    }
+
+    // Cập nhật lại giao diện ngay lập tức
+    applyFilters();
+    
+    // Nếu đang mở modal Saved Locations thì reload lại list luôn
+    let modal = document.getElementById('saved-locations-modal');
+    if (modal && modal.style.display === 'flex') {
+        openSavedLocationsModal();
+    }
+}
+
+// 3. Mở Modal Danh Sách Saved Locations
+async function openSavedLocationsModal() {
+    if (!currentUser) {
+        let wantLogin = confirm("Please sign in with Google to view your saved locations!");
+        if (wantLogin) handleAuth();
+        return;
+    }
+
+    document.getElementById('saved-locations-modal').style.display = 'flex';
+    const container = document.getElementById('saved-locations-list-container');
+    container.innerHTML = `<p style="color: #777; font-size: 13px;">Loading saved locations...</p>`;
+
+    // Query bảng saved_locations join sang places, sắp xếp mới nhất -> cũ nhất
+    const { data, error } = await supabaseClient
+        .from('saved_locations')
+        .select('*, places(*)')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        container.innerHTML = `<p style="color: #d32f2f; font-size: 13px;">Error loading saved locations: ${error.message}</p>`;
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        container.innerHTML = `<p style="color: #777; font-size: 13px;">No saved locations yet. Tap the heart icon on any place to save it!</p>`;
+        return;
+    }
+
+    container.innerHTML = '';
+    data.forEach(item => {
+        let place = item.places;
+        if (!place) return;
+        let safeJson = encodeURIComponent(JSON.stringify(place));
+
+        container.innerHTML += `
+            <div onclick="closeSavedLocationsModal(); showPlaceModal(allPlaces.find(p => p.id === ${place.id}) || ${safeJson});" style="background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 6px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s;">
+                <img src="${place.image || ''}" alt="" style="width: 55px; height: 55px; object-fit: cover; border-radius: 4px; flex-shrink: 0;">
+                <div style="flex-grow: 1;">
+                    <h4 style="margin: 0 0 4px 0; color: #333; font-size: 14px;">${place.name}</h4>
+                    <p style="margin: 0; font-size: 11px; color: #777;">📍 ${place.city || 'N/A'} | ⏱️ ${place.timeToVisit} mins</p>
+                </div>
+                <button onclick="toggleSavePlace(${place.id}, event); event.stopPropagation();" style="background: #fee2e2; color: #e11d48; border: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;" title="Remove">❤️</button>
+            </div>
+        `;
+    });
+}
+
+function closeSavedLocationsModal() {
+    document.getElementById('saved-locations-modal').style.display = 'none';
+}
+
+// 4. Mở rộng hàm applyFilters để lọc tab "Saved"
+const originalApplyFilters = window.applyFilters;
+window.applyFilters = function() {
+    if (currentType === 'saved') {
+        if (!currentUser) {
+            document.getElementById('place-list').innerHTML = `<p style="color: #777; font-size: 13px; text-align: center; padding: 20px;">Please login to view saved locations.</p>`;
+            return;
+        }
+        let filtered = allPlaces.filter(p => mySavedPlaceIds.has(p.id));
+        if (currentRegion !== 'All') filtered = filtered.filter(p => p.region === currentRegion);
+        if (currentCity !== 'All') filtered = filtered.filter(p => p.city === currentCity);
+        renderLibrary(filtered);
+    } else {
+        if (typeof originalApplyFilters === 'function') originalApplyFilters();
+    }
+};
+
+// 5. Mở rộng hàm setType để nhận diện nút Saved
+const originalSetType = window.setType;
+window.setType = function(type) {
+    currentType = type;
+    
+    // Kiểm tra xem đang ở mobile hay web để xử lý style active cho chuẩn
+    const isMobile = window.location.pathname.includes('m_itinerary_builder');
+
+    if (isMobile) {
+        // Xử lý riêng cho nút lọc Mobile (.type-btn)
+        let btnAttr = document.getElementById('btn-type-attraction');
+        let btnFood = document.getElementById('btn-type-food');
+        let btnAct = document.getElementById('btn-type-activity');
+        let btnSaved = document.getElementById('btn-type-saved');
+
+        if (btnAttr) btnAttr.className = type === 'attraction' ? 'type-btn active-attraction' : 'type-btn';
+        if (btnFood) btnFood.className = type === 'food' ? 'type-btn active-food' : 'type-btn';
+        if (btnAct) btnAct.className = type === 'activity' ? 'type-btn active-activity' : 'type-btn';
+        
+        if (btnSaved) {
+            if (type === 'saved') {
+                btnSaved.style.background = '#e11d48';
+                btnSaved.style.color = 'white';
+            } else {
+                btnSaved.style.background = '#f1f5f9';
+                btnSaved.style.color = '#e11d48';
+            }
+        }
+    } else {
+        // Xử lý cho bản Web
+        let btnAttr = document.getElementById('btn-type-attraction');
+        let btnFood = document.getElementById('btn-type-food');
+        let btnAct = document.getElementById('btn-type-activity');
+        let btnSaved = document.getElementById('btn-type-saved');
+
+        if (btnAttr) btnAttr.className = type === 'attraction' ? 'active-attraction' : '';
+        if (btnFood) btnFood.className = type === 'food' ? 'active-food' : '';
+        if (btnAct) btnAct.className = type === 'activity' ? 'active-activity' : '';
+        
+        if (btnSaved) {
+            if (type === 'saved') {
+                btnSaved.style.background = '#e11d48';
+                btnSaved.style.color = 'white';
+            } else {
+                btnSaved.style.background = '#f1f5f9';
+                btnSaved.style.color = '#e11d48';
+            }
+        }
+    }
+
+    applyFilters();
 };

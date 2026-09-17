@@ -1004,13 +1004,25 @@ window.addEventListener('click', (e) => {
     }
 });
 
-// --- PROFILE MANAGEMENT ---
+// --- SỬA HÀM MỞ PROFILE ---
 function openProfileModal() {
-    document.getElementById('profile-modal').style.display = 'flex';
+    const modal = document.getElementById('profile-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        // Nếu đang ở bản Mobile mà bấm nút Edit Details thì tự động nhảy về tab Profile cho hợp lý
+        if (typeof activateMobileTab === 'function') {
+            activateMobileTab('profile');
+        }
+    }
 }
 
-function closeProfileModal() {
-    document.getElementById('profile-modal').style.display = 'none';
+// --- SỬA HÀM ĐÓNG DRAFTS ---
+function closeDraftsModal() {
+    const modal = document.getElementById('drafts-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 // --- DRAFTS MODAL & MANAGEMENT ---

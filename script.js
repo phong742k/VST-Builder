@@ -2780,8 +2780,17 @@ window.applyFilters = function() {
             return;
         }
         let filtered = allPlaces.filter(p => mySavedPlaceIds.has(p.id));
-        if (currentRegion !== 'All') filtered = filtered.filter(p => p.region === currentRegion);
-        if (currentCity !== 'All') filtered = filtered.filter(p => p.city === currentCity);
+        
+        // Lọc theo Region
+        if (currentRegion !== 'All') {
+            filtered = filtered.filter(p => p.region === currentRegion);
+        }
+        
+        // Lọc theo City (Kiểm tra kỹ xem thành phố hiện tại có thuộc miền đang chọn không để tránh bị mất lọc)
+        if (currentCity !== 'All') {
+            filtered = filtered.filter(p => p.city === currentCity);
+        }
+
         renderLibrary(filtered);
     } else {
         if (typeof originalApplyFilters === 'function') originalApplyFilters();

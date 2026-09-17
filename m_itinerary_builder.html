@@ -176,6 +176,41 @@
         <!-- TAB 4: PROFILE -->
         <div id="tab-profile" class="tab-pane">
             <div id="mobile-auth-status"></div>
+            
+            <!-- KHUNG EDIT PROFILE CHO MOBILE -->
+            <div id="mobile-edit-profile-card" style="display: none; background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 15px;">
+                <h4 style="margin: 0 0 12px 0; color: #0f172a; font-size: 15px;">✏️ Edit Profile Details</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div>
+                        <label style="font-size: 11px; font-weight: bold; color: #64748b;">Full Name *</label>
+                        <input type="text" id="prof-name" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: bold; color: #64748b;">Country</label>
+                        <input type="text" id="prof-country" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: bold; color: #64748b;">Phone Number</label>
+                        <div style="display: flex; gap: 6px;">
+                            <select id="prof-country-code" style="width: 90px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white;">
+                                <option value="+84">+84 (VN)</option>
+                                <option value="+1">+1 (US)</option>
+                                <option value="+44">+44 (UK)</option>
+                                <option value="+61">+61 (AU)</option>
+                            </select>
+                            <input type="text" id="prof-phone-number" placeholder="Phone number" style="flex: 1; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: bold; color: #64748b;">Travel Preference</label>
+                        <input type="text" id="prof-pref" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 5px;">
+                        <button onclick="saveProfileInfo()" style="flex: 1; background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">Save Profile</button>
+                        <button onclick="document.getElementById('mobile-edit-profile-card').style.display='none'" style="background: #f1f5f9; color: #475569; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>

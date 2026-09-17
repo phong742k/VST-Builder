@@ -1010,8 +1010,10 @@ function openProfileModal() {
     if (modal) {
         modal.style.display = 'flex';
     } else {
-        // Nếu đang ở bản Mobile mà bấm nút Edit Details thì tự động nhảy về tab Profile cho hợp lý
-        if (typeof activateMobileTab === 'function') {
+        // Bản mobile: Bật khung edit profile ngay trong tab Profile
+        const mobCard = document.getElementById('mobile-edit-profile-card');
+        if (mobCard) {
+            mobCard.style.display = 'block';
             activateMobileTab('profile');
         }
     }
@@ -1036,10 +1038,6 @@ function openDraftsModal() {
     }
     document.getElementById('drafts-modal').style.display = 'flex';
     fetchUserDrafts();
-}
-
-function closeDraftsModal() {
-    document.getElementById('drafts-modal').style.display = 'none';
 }
 
 async function loadProfileData() {

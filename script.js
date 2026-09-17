@@ -2849,3 +2849,16 @@ window.setType = function(type) {
 
     applyFilters();
 };
+
+// --- XỬ LÝ KHI BẤM VÀO LOGO ---
+async function handleLogoClick() {
+    const hasData = dayCount > 0 || document.querySelectorAll('.timeline-item').length > 0;
+
+    if (hasData) {
+        let wantToSave = confirm("Do you want to save the current itinerary draft before leaving?");
+        if (wantToSave) {
+            await saveToCloud(); // Lưu bản hiện tại lên mây trước khi reload
+        }
+    }
+    location.reload(); // Tải lại trang chủ sạch sẽ
+}

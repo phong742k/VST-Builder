@@ -1009,13 +1009,14 @@ function openProfileModal() {
     const modal = document.getElementById('profile-modal');
     if (modal) {
         modal.style.display = 'flex';
-    } else {
-        // Bản mobile: Bật khung edit profile ngay trong tab Profile
-        const mobCard = document.getElementById('mobile-edit-profile-card');
-        if (mobCard) {
-            mobCard.style.display = 'block';
-            activateMobileTab('profile');
-        }
+        loadUserProfile(); // Load dữ liệu cũ vào modal khi bật lên
+    }
+}
+
+function closeProfileModal() {
+    const modal = document.getElementById('profile-modal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 }
 
@@ -1324,6 +1325,11 @@ async function loadDraftById(id) {
     document.getElementById('dashboard-selector').style.display = 'none';
     document.getElementById('guest-lock-screen').style.display = 'none';
     document.getElementById('main-app-container').style.display = 'flex';
+
+    // Thêm đoạn này ngay sau khi bật hiện main-app-container:
+    if (typeof activateMobileTab === 'function' && window.location.pathname.includes('m_itinerary_builder')) {
+        activateMobileTab('itinerary'); // Ép mobile nhảy sang tab lịch trình (Itinerary)
+    }
 
     const board = document.getElementById('itinerary-board');
     board.innerHTML = '';
@@ -2371,7 +2377,7 @@ function renderMobileProfileStatus() {
                 </div>
                 <p style="margin: 0 0 15px 0; font-size: 14px; font-weight: bold; color: #0f172a;">${currentUser.email}</p>
                 <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button onclick="openProfileModal()" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;">Edit Details</button>
+                    <button onclick="openProfileModal()" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;">Edit Profile</button>
                     <button onclick="handleAuth()" style="background: #fee2e2; color: #b91c1c; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;">Logout</button>
                 </div>
             </div>

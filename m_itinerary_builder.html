@@ -176,41 +176,6 @@
         <!-- TAB 4: PROFILE -->
         <div id="tab-profile" class="tab-pane">
             <div id="mobile-auth-status"></div>
-            
-            <!-- KHUNG EDIT PROFILE CHO MOBILE -->
-            <div id="mobile-edit-profile-card" style="display: none; background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 15px;">
-                <h4 style="margin: 0 0 12px 0; color: #0f172a; font-size: 15px;">✏️ Edit Profile Details</h4>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: #64748b;">Full Name *</label>
-                        <input type="text" id="prof-name" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: #64748b;">Country</label>
-                        <input type="text" id="prof-country" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: #64748b;">Phone Number</label>
-                        <div style="display: flex; gap: 6px;">
-                            <select id="prof-country-code" style="width: 90px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white;">
-                                <option value="+84">+84 (VN)</option>
-                                <option value="+1">+1 (US)</option>
-                                <option value="+44">+44 (UK)</option>
-                                <option value="+61">+61 (AU)</option>
-                            </select>
-                            <input type="text" id="prof-phone-number" placeholder="Phone number" style="flex: 1; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
-                        </div>
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: #64748b;">Travel Preference</label>
-                        <input type="text" id="prof-pref" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
-                    </div>
-                    <div style="display: flex; gap: 8px; margin-top: 5px;">
-                        <button onclick="saveProfileInfo()" style="flex: 1; background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">Save Profile</button>
-                        <button onclick="document.getElementById('mobile-edit-profile-card').style.display='none'" style="background: #f1f5f9; color: #475569; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">Cancel</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
     </div>
@@ -340,6 +305,63 @@
         <div style="position: relative; display: flex; align-items: center;">
             <div onclick="window.location.href='itinerary_builder.html'" style="width: 40px; height: 40px; background: #0f172a; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25);" title="Use Web Mode">
                 <span style="font-size: 18px;">💻</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE MODAL CHO MOBILE (Đưa ra modal nổi hoàn toàn) -->
+    <div id="profile-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3500; justify-content: center; align-items: center;">
+        <div style="background: white; width: 90%; max-width: 400px; max-height: 85vh; border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative; overflow-y: auto;">
+            <button onclick="closeProfileModal()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold; color: #64748b;">✕</button>
+            <h3 style="margin-top: 0; color: #0d47a1; margin-bottom: 15px; font-size: 16px;">👤 Edit Profile Details</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #64748b;">Full Name *</label>
+                    <input type="text" id="prof-name" placeholder="Your full name" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #64748b;">Email (Google Account)</label>
+                    <input type="text" id="prof-email" disabled style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #f1f5f9; color: #64748b;">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #64748b;">Phone Number</label>
+                    <div style="display: flex; gap: 6px;">
+                        <select id="prof-country-code" style="width: 90px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white;">
+                            <option>Country</option>
+                            <option value="84">Viet Nam +84</option>
+                            <option value="1">United States +1</option>
+                            <option value="44">United Kingdom +44</option>
+                            <option value="61">Australia +61</option>
+                            <option value="81">Japan +81</option>
+                            <option value="82">Korea +82</option>
+                            <option value="65">Singapore +65</option>
+                            <!-- Các option mã vùng khác giữ nguyên nếu cần -->
+                        </select>
+                        <input type="text" id="prof-phone-number" placeholder="912345678" style="flex: 1; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #64748b;">Country / Nationality</label>
+                    <select id="prof-country" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white;">
+                        <option value="">Select country...</option>
+                        <option value="Vietnam">Vietnam</option>
+                        <option value="United States">United States</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Japan">Japan</option>
+                        <option value="Singapore">Singapore</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #64748b;">Travel Preferences</label>
+                    <select id="prof-pref" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white;">
+                        <option>Culture & Heritage</option>
+                        <option>Adventure & Trekking</option>
+                        <option>Food & Culinary Tours</option>
+                        <option>Relaxation & Beaches</option>
+                    </select>
+                </div>
+                <button onclick="saveProfileInfo()" style="background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; margin-top: 5px;">Save Profile</button>
             </div>
         </div>
     </div>

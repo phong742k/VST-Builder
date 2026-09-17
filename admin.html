@@ -54,12 +54,6 @@
         .place-info h4 { margin: 0 0 5px 0; font-size: 14px; }
         .place-info p { margin: 0; font-size: 12px; color: #666; }
 
-        .flight-container { background: #ede7f6; border: 1px solid #d1c4e9; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .flight-container h4 { margin: 0 0 15px 0; color: #512da8; font-size: 16px; border-bottom: 1px dashed #b39ddb; padding-bottom: 5px; }
-        .flight-row { display: flex; gap: 15px; align-items: center; margin-bottom: 10px; }
-        .flight-row input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
-        .flight-row label { font-size: 12px; color: #555; font-weight: bold; }
-
         .add-day-btn { background: #fff; border: 2px dashed #2196f3; color: #2196f3; padding: 20px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
         .add-day-btn:hover { background: #e3f2fd; }
         .add-day-btn.faded { border-color: #ccc; color: #888; background: #fafafa; }
@@ -75,9 +69,6 @@
         .timeline-item { margin-bottom: 10px; cursor: grab; }
         .dropped-place { display: flex; gap: 10px; border: 1px solid #ddd; padding: 10px; border-radius: 6px; background: #fff; }
         .time-badge { font-weight: bold; color: #d32f2f; font-size: 14px; margin-bottom: 5px;}
-        
-        .transit-module { background: #f8f9fa; border: 1px dashed #aaa; padding: 8px 15px; margin: 10px 0 10px 20px; border-radius: 4px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
-        .btn-remove-transit { margin-left: auto; background: none; border: none; color: #c62828; cursor: pointer; font-size: 12px; font-weight: bold; }
         
         input[type="number"], input[type="time"] { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
         .custom-inputs input[type="text"], .custom-inputs select { width: 100%; box-sizing: border-box; padding: 6px; margin-bottom: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;}
@@ -171,9 +162,7 @@
 
                     <!-- BẢNG KÉO THẢ LỊCH TRÌNH -->
                     <div class="itinerary-wrapper">
-                        <div id="arrival-flight-box"></div>
                         <div id="itinerary-board" style="display: flex; flex-direction: column; gap: 15px;"></div>
-                        <div id="departure-flight-box"></div>
                     </div>
                 </div>
             </div>
@@ -685,8 +674,6 @@
                     + Click to start building your itinerary
                 </div>
             `;
-            renderArrivalFlight();
-            renderDepartureFlight();
         }
 
         function createNewSampleTemplate() {
@@ -696,58 +683,6 @@
             document.getElementById('builder-mode-title').innerText = "Tạo Tour Mẫu Mới";
             initBoard();
             switchTab('builder', null);
-        }
-
-        function renderArrivalFlight(data = null) {
-            const box = document.getElementById('arrival-flight-box');
-            box.innerHTML = `
-                <div class="flight-container">
-                    <h4>✈️ Arrival Flight (To Vietnam)</h4>
-                    <div class="flight-row">
-                        <label>From</label> <input type="text" class="arr-from" value="${data?.from || ''}" placeholder="SGN" style="width:60px; text-transform:uppercase;">
-                        <label>To</label> <input type="text" class="arr-to" value="${data?.to || ''}" placeholder="HAN" style="width:60px; text-transform:uppercase;">
-                        <label style="margin-left: 10px;">Date</label> <input type="date" class="arr-date" value="${data?.date || ''}">
-                    </div>
-                    <div class="flight-row">
-                        <label>Departure (24h)</label> <input type="time" class="arr-time" value="${data?.time || '08:00'}">
-                        <label style="margin-left: 10px;">Total Duration</label>
-                        <input type="number" class="arr-dur-hr" value="${data?.hr || '2'}" min="0" style="width:40px;"> <span style="font-size:12px;">hrs</span>
-                        <input type="number" class="arr-dur-min" value="${data?.min || '0'}" min="0" step="10" max="50" style="width:45px;"> <span style="font-size:12px;">mins</span>
-                    </div>
-                    <div class="flight-row">
-                        <label>Booking Ref</label> <input type="text" class="arr-pnr" value="${data?.pnr || ''}" placeholder="PNR" style="flex:1;">
-                        <label style="margin-left: 10px;">Note</label> <input type="text" class="arr-note" value="${data?.note || ''}" placeholder="Note..." style="flex:1;">
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderDepartureFlight(data = null) {
-            const box = document.getElementById('departure-flight-box');
-            if (dayCount === 0) {
-                box.innerHTML = '';
-                return;
-            }
-            box.innerHTML = `
-                <div class="flight-container" style="background: #e8eaf6; border-color: #c5cae9;">
-                    <h4 style="color: #283593;">✈️ Departure Flight (Back Home - Day ${dayCount})</h4>
-                    <div class="flight-row">
-                        <label>From</label> <input type="text" class="dep-from" value="${data?.from || ''}" placeholder="HAN" style="width:60px; text-transform:uppercase;">
-                        <label>To</label> <input type="text" class="dep-to" value="${data?.to || ''}" placeholder="SGN" style="width:60px; text-transform:uppercase;">
-                        <label style="margin-left: 10px;">Date</label> <input type="date" class="dep-date" value="${data?.date || ''}">
-                    </div>
-                    <div class="flight-row">
-                        <label>Departure (24h)</label> <input type="time" class="dep-time" value="${data?.time || '18:00'}">
-                        <label style="margin-left: 10px;">Total Duration</label>
-                        <input type="number" class="dep-dur-hr" value="${data?.hr || '2'}" min="0" style="width:40px;"> <span style="font-size:12px;">hrs</span>
-                        <input type="number" class="dep-dur-min" value="${data?.min || '0'}" min="0" step="10" max="50" style="width:45px;"> <span style="font-size:12px;">mins</span>
-                    </div>
-                    <div class="flight-row">
-                        <label>Booking Ref</label> <input type="text" class="dep-pnr" value="${data?.pnr || ''}" placeholder="PNR" style="flex:1;">
-                        <label style="margin-left: 10px;">Note</label> <input type="text" class="dep-note" value="${data?.note || ''}" placeholder="Note..." style="flex:1;">
-                    </div>
-                </div>
-            `;
         }
 
         function addNewDay(dayDate = '', startTime = '08:00') {
@@ -798,7 +733,6 @@
             }
 
             bindDropzoneEvents(document.getElementById(`drop-${dayId}`));
-            renderDepartureFlight();
             return document.getElementById(`drop-${dayId}`);
         }
 
@@ -842,8 +776,6 @@
 
             if (dayCount === 0) {
                 initBoard();
-            } else {
-                renderDepartureFlight();
             }
         }
 
@@ -902,7 +834,7 @@
                         <option>Bus / Public Transport</option>
                         <option>Walk</option>
                     </select>
-                    <input type="number" class="transit-minutes" value="30" step="15" onchange="recalculateTime(this.closest('.day-block').id)"> mins
+                    <input type="number" class="transit-minutes" value="30" step="5" onchange="recalculateTime(this.closest('.day-block').id)"> mins
                     <button class="btn-remove-transit" onclick="removeTransit(this)">Remove</button>
                 </div>
             </div>
@@ -926,7 +858,7 @@
                             <option ${placeData.method === 'Bus / Public Transport' ? 'selected' : ''}>Bus / Public Transport</option>
                             <option ${placeData.method === 'Walk' ? 'selected' : ''}>Walk</option>
                         </select>
-                        <input type="number" class="transit-minutes" value="${placeData.minutes || 30}" step="15" onchange="recalculateTime(this.closest('.day-block').id)"> mins
+                        <input type="number" class="transit-minutes" value="${placeData.minutes || 30}" step="5" onchange="recalculateTime(this.closest('.day-block').id)"> mins
                         <button class="btn-remove-transit" onclick="removeTransit(this)">Remove</button>
                     </div>
                 `;
@@ -961,7 +893,7 @@
                                 </div>
                                 <div class="duration-wrapper" style="display:${placeData.isOvernight ? 'none' : 'flex'}; gap:10px; align-items:center; margin-bottom:5px;">
                                     <label style="font-size:12px;">Duration:</label>
-                                    <input type="number" class="duration-input" value="${placeData.duration || 60}" step="15" onchange="recalculateTime('${dayId}')" style="width:70px;"> mins
+                                    <input type="number" class="duration-input" value="${placeData.duration || 60}" step="5" onchange="recalculateTime('${dayId}')" style="width:70px;"> mins
                                 </div>
                                 <input type="text" class="custom-price" value="${placeData.price || ''}" placeholder="Price">
                                 <input type="text" class="custom-link" value="${placeData.mapLink || ''}" placeholder="Map Link">
@@ -980,7 +912,7 @@
                             <h4 class="place-title">${placeData.name}</h4>
                             <div style="display:flex; align-items:center; gap:5px; margin-top:8px;">
                                 <label style="font-size:12px; color:#555;">Duration:</label>
-                                <input type="number" class="duration-input" value="${placeData.timeToVisit || 60}" step="15" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
+                                <input type="number" class="duration-input" value="${placeData.timeToVisit || 60}" step="5" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
                                 <span style="font-size:12px; color:#555;">mins</span>
                                 <span class="place-price" data-raw-min="${placeData.price_min || 0}" data-raw-max="${placeData.price_max || 0}" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${formatAdminPrice(placeData)}</span>
                             </div>
@@ -1107,7 +1039,6 @@
             board.innerHTML = '';
 
             const payload = data.data_json || {};
-            renderArrivalFlight(payload.arrival);
 
             if (payload.days && payload.days.length > 0) {
                 payload.days.forEach(dayInfo => {
@@ -1122,7 +1053,6 @@
                 initBoard();
             }
 
-            renderDepartureFlight(payload.departure);
             switchTab('builder', null);
         }
 
@@ -1196,26 +1126,6 @@
 
             const payload = {
                 dayCount: dayCount,
-                arrival: {
-                    from: document.querySelector('.arr-from')?.value || '',
-                    to: document.querySelector('.arr-to')?.value || '',
-                    date: document.querySelector('.arr-date')?.value || '',
-                    time: document.querySelector('.arr-time')?.value || '',
-                    hr: document.querySelector('.arr-dur-hr')?.value || '',
-                    min: document.querySelector('.arr-dur-min')?.value || '',
-                    pnr: document.querySelector('.arr-pnr')?.value || '',
-                    note: document.querySelector('.arr-note')?.value || ''
-                },
-                departure: {
-                    from: document.querySelector('.dep-from')?.value || '',
-                    to: document.querySelector('.dep-to')?.value || '',
-                    date: document.querySelector('.dep-date')?.value || '',
-                    time: document.querySelector('.dep-time')?.value || '',
-                    hr: document.querySelector('.dep-dur-hr')?.value || '',
-                    min: document.querySelector('.dep-dur-min')?.value || '',
-                    pnr: document.querySelector('.dep-pnr')?.value || '',
-                    note: document.querySelector('.dep-note')?.value || ''
-                },
                 days: daysData
             };
 
@@ -1312,26 +1222,6 @@
 
             const payload = {
                 dayCount: dayCount,
-                arrival: {
-                    from: document.querySelector('.arr-from')?.value || '',
-                    to: document.querySelector('.arr-to')?.value || '',
-                    date: document.querySelector('.arr-date')?.value || '',
-                    time: document.querySelector('.arr-time')?.value || '',
-                    hr: document.querySelector('.arr-dur-hr')?.value || '',
-                    min: document.querySelector('.arr-dur-min')?.value || '',
-                    pnr: document.querySelector('.arr-pnr')?.value || '',
-                    note: document.querySelector('.arr-note')?.value || ''
-                },
-                departure: {
-                    from: document.querySelector('.dep-from')?.value || '',
-                    to: document.querySelector('.dep-to')?.value || '',
-                    date: document.querySelector('.dep-date')?.value || '',
-                    time: document.querySelector('.dep-time')?.value || '',
-                    hr: document.querySelector('.dep-dur-hr')?.value || '',
-                    min: document.querySelector('.dep-dur-min')?.value || '',
-                    pnr: document.querySelector('.dep-pnr')?.value || '',
-                    note: document.querySelector('.dep-note')?.value || ''
-                },
                 days: daysData
             };
 
@@ -1404,7 +1294,6 @@
             board.innerHTML = '';
 
             const payload = data.data_json || {};
-            renderArrivalFlight(payload.arrival);
 
             if (payload.days && payload.days.length > 0) {
                 payload.days.forEach(dayInfo => {
@@ -1423,7 +1312,6 @@
                 });
             }
 
-            renderDepartureFlight(payload.departure);
             switchTab('builder', null);
         }
         // Hàm load ngược bản nháp gần nhất vào Builder khi bấm vào ô Draft ở sidebar
@@ -1448,7 +1336,6 @@
             board.innerHTML = '';
 
             const payload = data.data_json || {};
-            renderArrivalFlight(payload.arrival);
 
             if (payload.days && payload.days.length > 0) {
                 payload.days.forEach(dayInfo => {
@@ -1463,7 +1350,6 @@
                 initBoard();
             }
 
-            renderDepartureFlight(payload.departure);
             switchTab('builder', null);
             alert("✨ Đã tải thành công bản nháp vào Builder!");
         }

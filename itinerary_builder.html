@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Vietnam Solo Trip - Itinerary Builder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VST Builder - Build your next trip to Vietnam!</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -55,12 +56,6 @@
         
         .itinerary-wrapper { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; }
         
-        .flight-container { background: #ede7f6; border: 1px solid #d1c4e9; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .flight-container h4 { margin: 0 0 15px 0; color: #512da8; font-size: 16px; border-bottom: 1px dashed #b39ddb; padding-bottom: 5px; }
-        .flight-row { display: flex; gap: 15px; align-items: center; margin-bottom: 10px; }
-        .flight-row input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
-        .flight-row label { font-size: 12px; color: #555; font-weight: bold; }
-        
         .add-day-btn { background: #fff; border: 2px dashed #2196f3; color: #2196f3; padding: 20px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
         .add-day-btn:hover { background: #e3f2fd; }
         .add-day-btn.faded { border-color: #ccc; color: #888; background: #fafafa; }
@@ -79,18 +74,11 @@
         .dropped-place { display: flex; gap: 10px; border: 1px solid #ddd; padding: 10px; border-radius: 6px; }
         .time-badge { font-weight: bold; color: #d32f2f; font-size: 14px; margin-bottom: 5px;}
         
-        .transit-module { background: #f8f9fa; border: 1px dashed #aaa; padding: 8px 15px; margin: 10px 0 10px 20px; border-radius: 4px; display: flex; align-items: center; gap: 10px; font-size: 13px; cursor: default; }
-        .btn-remove-transit { margin-left: auto; background: none; border: none; color: #c62828; cursor: pointer; font-size: 12px; font-weight: bold; }
-        
         input[type="number"], input[type="time"] { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
         .custom-inputs input[type="text"], .custom-inputs select { width: 100%; box-sizing: border-box; padding: 6px; margin-bottom: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;}
         .btn-remove { margin-left: auto; background: #ffebee; color: #c62828; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 12px; height: fit-content;}
         .btn-remove-day { background: #ffebee; color: #c62828; border: none; padding: 4px 8px; cursor: pointer; border-radius: 4px; font-size: 12px; font-weight: bold;}
         .dragging { opacity: 0.5; }
-        
-        .transit-flight-section { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #d1c4e9; display: none; }
-        .btn-add-layover { background: #e3f2fd; color: #1565c0; border: 1px dashed #1565c0; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 10px; }
-        .btn-remove-layover { background: none; border: none; color: #c62828; cursor: pointer; font-size: 14px; margin-left: auto; }
         /* Giao diện mới cho 2 nút tĩnh nằm dưới phần Cost Summary */
         .static-action-buttons {
             display: flex;
@@ -130,16 +118,52 @@
         .btn-export-action:hover {
             background: #059669;
         }
+
+        /* Mặc định cho Laptop / Màn hình ngang rộng */
+        .responsive-day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .day-header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .btn-remove-day {
+            background: #ffebee;
+            color: #c62828;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2 onclick="location.reload()">VST Itinerary Builder</h2>
-        <div id="auth-container" style="display: flex; align-items: center; gap: 15px;">
-            <span id="user-email" style="font-size: 13px; font-weight: bold; color: #333;"></span>
-            <button id="profile-btn" onclick="openProfileModal()" style="display:none; background: #2196f3; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">👤 My Profile</button>
-            <button id="auth-btn" onclick="handleAuth()" style="background: #4caf50; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">Login with Google</button>
+    <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+        <!-- Logo bên trái -->
+        <div onclick="location.reload()" style="display: inline-block; cursor: pointer;">
+            <img src="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/VST%20Builder%20Logo.png" alt="VST Logo" style="height: 38px; object-fit: contain;">
+        </div>
+        
+        <!-- Nhóm tài khoản và chuyển chế độ nằm bên phải -->
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+            <div id="auth-container" style="display: flex; align-items: center; gap: 15px;">
+                <span id="user-email" style="font-size: 13px; font-weight: bold; color: #333;"></span>
+                <button id="profile-btn" onclick="openProfileModal()" style="display:none; background: #2196f3; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">👤 My Profile</button>
+                <button id="auth-btn" onclick="handleAuth()" style="background: #4caf50; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">Login with Google</button>
+            </div>
+            <!-- Nút Mobile Mode nhỏ gọn nằm dưới -->
+            <button onclick="window.location.href='m_itinerary_builder.html'" style="background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">📱 Use Mobile Mode</button>
         </div>
     </div>
 
@@ -181,11 +205,9 @@
         </div>
 
         <div class="itinerary-wrapper">
-            <div id="arrival-flight-box"></div>
             <div id="itinerary-board" style="display: flex; flex-direction: column; gap: 15px;"></div>
-            <div id="departure-flight-box"></div>
             <!-- COST SUMMARY BOX -->
-            <div id="itinerary-cost-summary" style="background: white; border: 1px solid #cbd5e1; padding: 15px 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 15px;">
+            <div id="itinerary-cost-summary" style="display: none; background: white; border: 1px solid #cbd5e1; padding: 15px 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 15px;">
                 <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
                     <h4 style="margin: 0 0 5px 0; color: #0f172a; font-size: 15px;">Estimated Total Cost</h4>
                     <!-- Đã chuyển tổng tiền xuống dưới, căn trái hoàn toàn để không sợ bị nút float che -->
@@ -198,7 +220,7 @@
                 </div>
             </div>
             <!-- 2 nút Save & Export PDF ở đáy -->
-            <div class="static-action-buttons">
+            <div class="static-action-buttons" style="display: none;">
                 <button class="btn-save-action" onclick="saveToCloud()">☁️ Save Draft</button>
                 <button class="btn-export-action" onclick="savePDF()">📄 Export PDF</button>
             </div>
@@ -979,6 +1001,20 @@
             }
         });
     </script>
+
+    <!-- POPUP GỢI Ý SANG MOBILE (CĂN GIỮA TOÀN MÀN HÌNH) -->
+    <div id="mobile-suggest-popup" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 99999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 85%; max-width: 350px; text-align: center; border: 2px solid #0284c7;">
+            <h3 style="margin-top: 0; color: #0f172a; font-size: 18px;">📱 Better Experience?</h3>
+            <p style="font-size: 15px; color: #475569; margin-bottom: 15px; line-height: 1.5;">We noticed you are using a mobile device. Would you like to switch to the Mobile App interface?</p>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 20px; font-style: italic;">(You can switch views anytime using the '📱 Use Mobile Mode' button).</p>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="dismissMobilePopup()" style="flex: 1; padding: 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Stay Here</button>
+                <button onclick="window.location.href='m_itinerary_builder.html'" style="flex: 1; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Switch Now</button>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>

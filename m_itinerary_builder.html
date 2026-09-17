@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VST Builder - Build your next trip to Vietnam!</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* CSS CHUẨN APP MOBILE */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; background: #f8fafc; padding-bottom: 70px; -webkit-tap-highlight-color: transparent; }
+        
+        .mobile-header { background: white; padding: 15px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center; }
+        .mobile-header h2 { margin: 0; color: #0d47a1; font-size: 18px; }
+
+        .tab-pane { display: none; padding: 15px; animation: fadeIn 0.2s ease-in-out; }
+        .tab-pane.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Khắc phục lỗi Fix cứng chiều ngang khi xoay màn hình */
+        .timeline-item, .dropped-place, .custom-inputs { width: 100%; box-sizing: border-box; }
+        .custom-inputs input, .custom-inputs select { width: 100%; box-sizing: border-box; padding: 8px; margin-bottom: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
+        
+        .place-card { display: flex; gap: 10px; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 12px; border-radius: 8px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .place-card img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+        .place-info h4 { margin: 0 0 4px 0; font-size: 14px; color: #0f172a; }
+        .place-info p { margin: 0; font-size: 11px; color: #64748b; }
+        
+        .day-block { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .day-header { display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
+        .day-date-input, .day-start-time { padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; width: 100%; box-sizing: border-box; }
+        .dropzone { min-height: 50px; }
+        .timeline-item { margin-bottom: 12px; }
+        .dropped-place { display: flex; flex-direction: column; gap: 8px; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; background: #fff; }
+        .time-badge { font-weight: bold; color: #0284c7; font-size: 13px; margin-bottom: 2px;}
+
+        /* Bổ sung CSS cho nút Remove Day và Add Day */
+        .btn-remove-day { background: #fee2e2; color: #b91c1c; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .add-day-btn { background: #fff; border: 2px dashed #0284c7; color: #0284c7; padding: 20px; text-align: center; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+        .add-day-btn:active { background: #e0f2fe; }
+
+        .mobile-bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #e2e8f0; z-index: 2500; display: flex; justify-content: space-around; padding: 10px 5px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); box-sizing: border-box; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+        .mob-tab-btn { background: none; border: none; font-size: 10px; font-weight: 600; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px; width: 20%; cursor: pointer; }
+        .mob-tab-btn.active { color: #0284c7; }
+        .mob-tab-btn span { font-size: 20px; transition: transform 0.1s; }
+        .mob-tab-btn.active span { transform: scale(1.1); }
+
+        /* Sửa lại chuẩn CSS cho Nút Type Locations / F&B */
+        .type-btn { flex:1; padding:8px; border-radius:6px; border:none; background:#f1f5f9; color:#475569; font-size:12px; font-weight:bold; cursor:pointer; }
+        .active-attraction { background: #2196f3 !important; color: white !important; }
+        .active-food { background: #f59e0b !important; color: white !important; }
+        .active-activity { background: #10b981 !important; color: white !important; }
+        
+        .place-desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+        /* Ép giao diện bung full 100% ngang không bị co */
+        #main-app-container { display: block !important; width: 100%; box-sizing: border-box; }
+        .place-card, .day-block, .timeline-item { width: 100%; box-sizing: border-box; }
+        
+        /* Chia lại bottom bar thành 4 nút (25% mỗi tab) */
+        .mob-tab-btn { width: 25% !important; }
+        /* Style cho nút City do JS sinh ra */
+        .city-btn { padding: 6px 12px; border-radius: 15px; border: 1px solid #cbd5e1; background: white; color: #333; font-size: 11px; cursor: pointer; white-space: nowrap; margin-right: 5px; }
+        .city-btn.active { background: #0f172a; color: white; border-color: #0f172a; font-weight: bold; }
+        /* CSS cho Inline Fast Picker ngay trong ngày */
+        .inline-picker-container { background: #f8fafc; border: 2px solid #0284c7; border-radius: 12px; padding: 12px; margin-top: 15px; box-shadow: 0 4px 12px rgba(2,132,199,0.1); animation: fadeIn 0.2s ease-in-out; }
+        .picker-search-input { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; margin-bottom: 8px; outline: none; }
+        .picker-results-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding-right: 2px; }
+        .picker-item-card { display: flex; gap: 8px; background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 6px; cursor: pointer; align-items: center; transition: 0.1s; }
+        .picker-item-card:active { background: #e0f2fe; }
+        .picker-item-card img { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+        .picker-item-info h5 { margin: 0 0 2px 0; font-size: 12px; color: #0f172a; }
+        .picker-item-info p { margin: 0; font-size: 10px; color: #64748b; }
+
+        /* Bổ sung/Cập nhật chuẩn CSS cho Day Header trên Mobile */
+        .day-header { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            border-bottom: 2px solid #ccc; 
+            padding-bottom: 12px; 
+            margin-bottom: 15px; 
+        }
+        .day-header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+        .day-date-input, .day-start-time { 
+            padding: 8px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-size: 13px; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+        .btn-remove-day { 
+            background: #fee2e2; 
+            color: #b91c1c; 
+            border: none; 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            align-self: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-header" style="display: flex; align-items: center; justify-content: center; padding: 15px 15px;">
+        <a href="m_itinerary_builder.html" style="display: inline-block; cursor: pointer;">
+            <img src="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/VST%20Builder%20Logo.png" alt="VST Logo" style="height: 32px; object-fit: contain;">
+        </a>
+    </div>
+
+    <div id="guest-lock-screen" style="display: none; padding: 30px 20px; text-align: center;">
+        <span style="font-size: 40px; margin-bottom: 10px; display: block;">👋</span>
+        <h3 style="color: #0f172a; margin-top: 0;">Welcome to VST Builder</h3>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Please login to design trips, save drafts, and export PDFs.</p>
+        <button onclick="handleAuth()" style="background: #0284c7; color: white; padding: 12px 25px; border: none; border-radius: 25px; font-weight: bold; font-size: 14px; width: 100%;">Login with Google</button>
+    </div>
+
+    <div id="main-app-container" style="display: none;">
+        
+        <!-- TAB 1: ITINERARY -->
+        <div id="tab-itinerary" class="tab-pane">
+            <div id="itinerary-board" style="display: flex; flex-direction: column; gap: 15px; margin-top: 5px;"></div>
+            
+            <div id="itinerary-cost-summary" style="background: white; border: 1px solid #cbd5e1; padding: 15px; border-radius: 12px; margin-top: 15px;">
+                <h4 style="margin: 0 0 5px 0; color: #0f172a; font-size: 14px;">Estimated Cost</h4>
+                <div id="cost-total-amount" style="font-size: 20px; font-weight: bold; color: #0284c7; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">0 VND</div>
+                <div style="font-size: 12px; color: #475569; display: flex; flex-direction: column; gap: 5px;">
+                    <div style="display: flex; justify-content: space-between;"><span>Attractions:</span><strong id="cost-sub-attraction">0 VND</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>F&B:</span><strong id="cost-sub-food">0 VND</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Transit:</span><strong id="cost-sub-transit">0 VND</strong></div>
+                </div>
+            </div>
+            
+            <!-- Cụm 3 nút Clear / Save / PDF ẩn dưới cùng của tab -->
+            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                <button onclick="mobileActionNewTrip()" style="flex:1; padding: 12px 5px; background: #fff; color: #b91c1c; border: 1px solid #b91c1c; border-radius: 8px; font-weight: bold; font-size: 13px;">🗑️ Clear</button>
+                <button onclick="saveToCloud()" style="flex:1; padding: 12px 5px; background: #f1f5f9; color: #0284c7; border: 1px solid #0284c7; border-radius: 8px; font-weight: bold; font-size: 13px;">☁️ Save</button>
+                <button onclick="savePDF()" style="flex:1; padding: 12px 5px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 13px;">📄 Print PDF</button>
+            </div>
+        </div>
+
+        <!-- TAB 2: LIBRARY -->
+        <div id="tab-library" class="tab-pane active">
+            <h3 style="margin: 0 0 15px 0; color: #0f172a; font-size: 16px;">📍 Browse Locations</h3>
+            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <!-- Đã sửa class cho các nút Type -->
+                <button onclick="setType('attraction')" id="btn-type-attraction" class="type-btn active-attraction">Locations</button>
+                <button onclick="setType('food')" id="btn-type-food" class="type-btn">F&B</button>
+                <button onclick="setType('activity')" id="btn-type-activity" class="type-btn">Activities</button>
+            </div>
+            <div id="region-tabs" style="display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px;">
+                <button onclick="setRegion('All')" id="btn-reg-All" style="padding:6px 12px; border-radius:15px; border:1px solid #cbd5e1; background:#0f172a; color:white; font-size:11px;">All</button>
+                <button onclick="setRegion('North')" id="btn-reg-North" style="padding:6px 12px; border-radius:15px; border:1px solid #cbd5e1; background:white; color:#333; font-size:11px;">North</button>
+                <button onclick="setRegion('Central')" id="btn-reg-Central" style="padding:6px 12px; border-radius:15px; border:1px solid #cbd5e1; background:white; color:#333; font-size:11px;">Central</button>
+                <button onclick="setRegion('South')" id="btn-reg-South" style="padding:6px 12px; border-radius:15px; border:1px solid #cbd5e1; background:white; color:#333; font-size:11px;">South</button>
+            </div>
+            <div id="city-tabs-container" style="display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;"></div>
+            
+            <div id="place-list"></div>
+        </div>
+
+        <!-- TAB 3: EXPLORE SAMPLES -->
+        <div id="tab-samples" class="tab-pane">
+            <h3 style="margin: 0 0 10px 0; color: #0f172a; font-size: 16px;">🌟 Explore Templates</h3>
+            <p style="font-size: 12px; color: #64748b; margin-top: 0;">Select a ready-made route to customize.</p>
+            <div id="sample-filter-tags" style="display: flex; gap: 6px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px;"></div>
+            <div id="sample-trips-grid" style="display: flex; flex-direction: column; gap: 15px;"></div>
+        </div>
+
+        <!-- TAB 4: PROFILE -->
+        <div id="tab-profile" class="tab-pane">
+            <div id="mobile-auth-status"></div>
+        </div>
+
+    </div>
+
+    <!-- KHU VỰC CHỨA CÁC MODALS ẨN CHUẨN XÁC -->
+    <div id="dashboard-selector" style="display: none;"></div>
+    <div id="pdf-render-area" style="display: none;"></div>
+    
+    <!-- Modal Chi Tiết Địa Điểm -->
+    <div id="place-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center;">
+        <div style="background: white; width: 90%; border-radius: 12px; padding: 20px; position: relative;">
+            <button onclick="closeModal()" style="position: absolute; top: 10px; right: 10px; background: #f1f5f9; border: none; width: 30px; height: 30px; border-radius: 50%; font-weight: bold;">✕</button>
+            <img id="modal-img" src="" alt="" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
+            <h3 id="modal-title" style="margin: 0 0 5px 0;"></h3>
+            <p id="modal-address" style="font-size: 12px; color: #64748b; margin: 0 0 10px 0;"></p>
+            <div style="font-size: 13px; font-weight: bold; color: #0284c7; margin-bottom: 10px;">⏱️ <span id="modal-time"></span> mins | 💰 <span id="modal-price"></span></div>
+            <div id="modal-desc" style="font-size: 13px; color: #475569; max-height: 150px; overflow-y: auto;"></div>
+            <div id="modal-map-btn" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- Modal Chi Tiết Sample Tour -->
+    <div id="tour-detail-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: flex-end;">
+        <div style="background: white; width: 100%; max-height: 90vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 16px;">Trip Details</h3>
+                <button onclick="closeTourDetailModal()" style="background: none; border: none; font-size: 18px; font-weight: bold;">✕</button>
+            </div>
+            <div id="tour-detail-content" style="overflow-y: auto; flex-grow: 1; padding-bottom: 20px;"></div>
+            <div style="display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                <button onclick="useCurrentDetailSample()" style="flex: 1; background: #0284c7; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold;">🌟 Use Sample</button>
+            </div>
+        </div>
+    </div>
+
+<div class="mobile-bottom-bar" id="mobile-bottom-bar" style="display: none;">
+        <button class="mob-tab-btn active" id="btn-tab-library" onclick="activateMobileTab('library')"><span>📍</span> Library</button>
+        <button class="mob-tab-btn" id="btn-tab-itinerary" onclick="activateMobileTab('itinerary')"><span>🗺️</span> Itinerary</button>
+        <button class="mob-tab-btn" id="btn-tab-samples" onclick="activateMobileTab('samples')"><span>🌟</span> Samples</button>
+        <button class="mob-tab-btn" id="btn-tab-profile" onclick="activateMobileTab('profile')"><span>👤</span> Profile</button>
+    </div>
+
+    <!-- Gọi đúng file script JS -->
+    <script src="script.js"></script>
+
+    <!-- ================= HỆ THỐNG MODAL HỖ TRỢ BỊ THIẾU ================= -->
+    <div id="support-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center;">
+        <div style="background: white; width: 90%; max-width: 450px; border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative;">
+            <button onclick="closeSupportModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+            <h3 style="margin-top: 0; color: #0d47a1; margin-bottom: 15px;">💡 Request Support</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Request Type *</label>
+                    <select id="req-type" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #fff;">
+                        <option value="Flight & Ticket Booking">Flight & Ticket Booking</option>
+                        <option value="Tour Consultation">Tour Consultation</option>
+                        <option value="Location Information Support">Location Information Support</option>
+                        <option value="Other Requests">Other Requests</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Full Name *</label>
+                    <input type="text" id="req-name" readonly style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #f1f5f9; color: #64748b; cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Email *</label>
+                    <input type="text" id="req-email" readonly style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #f1f5f9; color: #64748b; cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Phone Number (WhatsApp) *</label>
+                    <input type="text" id="req-phone" placeholder="e.g., +84 912345678 or N/A" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #555;">Detailed Message *</label>
+                    <textarea id="req-message" placeholder="Describe what you need help with..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; height: 80px;"></textarea>
+                </div>
+                <button onclick="submitSupportRequest()" style="background: #8b5cf6; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px;">Submit Request</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= HỆ THỐNG NÚT NỔI (FLOATING WIDGETS) CHO MOBILE ================= -->
+    <div style="position: fixed; bottom: 85px; right: 15px; display: flex; flex-direction: column; gap: 12px; z-index: 9999; align-items: flex-end;">
+        
+        <!-- NÚT QUAY LẠI ĐẦU TRANG -->
+        <div style="position: relative; display: flex; align-items: center;">
+            <div onclick="window.scrollTo({top: 0, behavior: 'smooth'})" style="width: 40px; height: 40px; background: #ffffff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+                <span style="font-size: 16px; color: rgb(24, 16, 93);">↑</span>
+            </div>
+        </div>
+
+        <!-- NÚT HỖ TRỢ -->
+        <div style="position: relative; display: flex; align-items: center;">
+            <div onclick="openSupportModal()" style="width: 40px; height: 40px; background: #ffffff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+                <span style="font-size: 18px; color: white;">🙋‍♂️</span>
+            </div>
+        </div>
+
+        <!-- 1. NÚT CONTACT US -->
+        <div id="contact-widget-container" style="position: relative; display: flex; align-items: center;">
+            <div id="contact-submenu" style="display: none; position: absolute; right: 50px; background: white; padding: 6px 10px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; gap: 8px; align-items: center; white-space: nowrap;">
+                <a href="https://www.facebook.com/vietnam.solotrip" target="_blank" style="width: 30px; height: 30px; background: #1877f2; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none;">
+                    <svg style="width: 14px; height: 14px; fill: white;" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </a>
+                <a href="https://www.instagram.com/vietnam.solotrip/" target="_blank" style="width: 30px; height: 30px; background: radial-gradient(circle at 30% 107%, #fdf497 0%, #df497d 5%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none;">
+                    <svg style="width: 14px; height: 14px; fill: white;" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+            </div>
+            <div onclick="toggleContactMenu()" style="width: 40px; height: 40px; background: #2271fa; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+                <span style="font-size: 18px; color: white;">💬</span>
+            </div>
+        </div>
+
+        <!-- 2. NÚT ĐỔI TIỀN TỆ -->
+        <div id="currency-widget-container" style="position: relative; display: flex; align-items: center;">
+            <div id="currency-submenu" style="display: none; position: absolute; right: 50px; background: white; padding: 6px 10px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; gap: 6px; align-items: center; white-space: nowrap;">
+                <span onclick="switchUserCurrency('VND'); toggleCurrencyMenu();" id="float-curr-vnd" style="cursor: pointer; padding: 6px 14px; border-radius: 20px; background: #0f172a; color: white; font-size: 12px; font-weight: bold;">VND</span>
+                <span onclick="switchUserCurrency('USD'); toggleCurrencyMenu();" id="float-curr-usd" style="cursor: pointer; padding: 6px 14px; border-radius: 20px; background: transparent; color: #64748b; font-size: 12px; font-weight: bold;">USD</span>
+            </div>
+            <div onclick="toggleCurrencyMenu()" style="width: 40px; height: 40px; background: #ffffff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+                <span style="font-size: 18px; color: white;">💱</span>
+            </div>
+        </div>
+
+        <!-- 3. NÚT CHUYỂN SANG BẢN WEB (MỚI) -->
+        <div style="position: relative; display: flex; align-items: center;">
+            <div onclick="window.location.href='itinerary_builder.html'" style="width: 40px; height: 40px; background: #0f172a; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25);" title="Use Web Mode">
+                <span style="font-size: 18px;">💻</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleContactMenu() {
+            const contactMenu = document.getElementById('contact-submenu');
+            const currMenu = document.getElementById('currency-submenu');
+            if (currMenu) currMenu.style.display = 'none';
+            if (contactMenu) contactMenu.style.display = (contactMenu.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function toggleCurrencyMenu() {
+            const currMenu = document.getElementById('currency-submenu');
+            const contactMenu = document.getElementById('contact-submenu');
+            if (contactMenu) contactMenu.style.display = 'none';
+            if (currMenu) currMenu.style.display = (currMenu.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        // Đồng bộ màu sắc nút đổi tiền tệ trên giao diện Mobile
+        const originalSwitchUserCurrency = window.switchUserCurrency;
+        window.switchUserCurrency = function(unit) {
+            if (typeof originalSwitchUserCurrency === 'function') {
+                originalSwitchUserCurrency(unit);
+            }
+            const fVnd = document.getElementById('float-curr-vnd');
+            const fUsd = document.getElementById('float-curr-usd');
+            if (fVnd && fUsd) {
+                if (unit === 'VND') {
+                    fVnd.style.background = '#0f172a'; fVnd.style.color = 'white';
+                    fUsd.style.background = 'transparent'; fUsd.style.color = '#64748b';
+                } else {
+                    fUsd.style.background = '#0f172a'; fUsd.style.color = 'white';
+                    fVnd.style.background = 'transparent'; fVnd.style.color = '#64748b';
+                }
+            }
+        };
+
+        // Bấm ra ngoài vùng menu thì tự động ẩn menu nổi
+        window.addEventListener('click', function(e) {
+            const contactContainer = document.getElementById('contact-widget-container');
+            const currencyContainer = document.getElementById('currency-widget-container');
+            if (contactContainer && !contactContainer.contains(e.target)) {
+                const subMenu = document.getElementById('contact-submenu');
+                if (subMenu) subMenu.style.display = 'none';
+            }
+            if (currencyContainer && !currencyContainer.contains(e.target)) {
+                const subMenu = document.getElementById('currency-submenu');
+                if (subMenu) subMenu.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

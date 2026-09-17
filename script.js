@@ -20,31 +20,41 @@ supabaseClient.auth.onAuthStateChange(async(event, session) => {
     const userEmail = document.getElementById('user-email');
     const profileBtn = document.getElementById('profile-btn');
 
-    // Mở khóa giao diện toàn tập cho khách vãng lai dùng ngay lập tức
-    document.getElementById('guest-lock-screen').style.display = 'none';
-    document.getElementById('dashboard-selector').style.display = 'none';
-    document.getElementById('main-app-container').style.display = 'flex';
+    // Mở khóa giao diện - Dùng if để chống Crash nếu thẻ HTML không tồn tại trên mobile
+    const guestLock = document.getElementById('guest-lock-screen');
+    const dashSelector = document.getElementById('dashboard-selector');
+    const mainApp = document.getElementById('main-app-container');
+    
+    if (guestLock) guestLock.style.display = 'none';
+    if (dashSelector) dashSelector.style.display = 'none';
+    if (mainApp) mainApp.style.display = 'flex';
 
     if (dayCount === 0) {
         initBoard();
     }
 
     if (currentUser) {
-        userEmail.innerText = currentUser.email;
-        authBtn.innerText = 'Logout';
-        authBtn.style.background = '#d32f2f';
-        profileBtn.style.display = 'inline-block';
+        if (userEmail) userEmail.innerText = currentUser.email;
+        if (authBtn) {
+            authBtn.innerText = 'Logout';
+            authBtn.style.background = '#d32f2f';
+        }
+        if (profileBtn) profileBtn.style.display = 'inline-block';
         
         loadUserProfile();
-        checkAdminPermission();
-        await checkAndEnforceProfileName(); // Tự động check xem đã có tên chưa để bật popup lần đầu
+        if (typeof checkAdminPermission === 'function') checkAdminPermission();
+        await checkAndEnforceProfileName();
+    } else {
+        if (userEmail) userEmail.innerText = '';
+        if (authBtn) {
+            authBtn.innerText = 'Login with Google';
+            authBtn.style.background = '#4caf50';
+        }
+        if (profileBtn) profileBtn.style.display = 'none';
     }
-    else {
-        userEmail.innerText = '';
-        authBtn.innerText = 'Login with Google';
-        authBtn.style.background = '#4caf50';
-        profileBtn.style.display = 'none';
-    }
+
+    // Tự động load dữ liệu Profile vào tab Mobile nếu đang chạy file mobile
+    if (typeof renderMobileProfileStatus === 'function') renderMobileProfileStatus();
 });
 
 function showGuestLock() {
@@ -84,6 +94,9 @@ async function startNewItinerary() {
     document.getElementById('main-app-container').style.display = 'flex';
     
     initBoard();
+    
+    // ÉP CẬP NHẬT LẠI TỔNG CHI PHÍ VỀ 0
+    if (typeof updateCostSummary === 'function') updateCostSummary();
 }
 
 async function handleAuth() {
@@ -118,29 +131,60 @@ fetchPlacesLibrary();
 
 function setType(type) {
     currentType = type;
-    document.getElementById('btn-type-attraction').className = type === 'attraction' ? 'active-attraction' : '';
-    document.getElementById('btn-type-food').className = type === 'food' ? 'active-food' : '';
-    document.getElementById('btn-type-activity').className = type === 'activity' ? 'active-activity' : '';
+    
+    // Lấy 3 nút ra
+    let btnAttr = document.getElementById('btn-type-attraction');
+    let btnFood = document.getElementById('btn-type-food');
+    let btnAct = document.getElementById('btn-type-activity');
+
+    // Gỡ màu active cũ (dùng classList để giữ nguyên hình dáng nút)
+    if (btnAttr) btnAttr.classList.remove('active-attraction');
+    if (btnFood) btnFood.classList.remove('active-food');
+    if (btnAct) btnAct.classList.remove('active-activity');
+
+    // Đắp màu active mới tương ứng
+    if (type === 'attraction' && btnAttr) btnAttr.classList.add('active-attraction');
+    if (type === 'food' && btnFood) btnFood.classList.add('active-food');
+    if (type === 'activity' && btnAct) btnAct.classList.add('active-activity');
+
     applyFilters();
 }
 
 function setRegion(region) {
     currentRegion = region;
     currentCity = 'All';
-    document.querySelectorAll('.region-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`btn-reg-${region}`).classList.add('active');
+    
+    // Gỡ class 'active' của toàn bộ nút miền
+    const regButtons = ['All', 'North', 'Central', 'South'];
+    regButtons.forEach(reg => {
+        let btn = document.getElementById(`btn-reg-${reg}`);
+        if (btn) {
+            btn.classList.remove('active');
+            // Cập nhật lại màu inline/class dự phòng cho chắc ăn
+            if (reg === region) {
+                btn.classList.add('active');
+                btn.style.background = '#0f172a';
+                btn.style.color = 'white';
+                btn.style.borderColor = '#0f172a';
+            } else {
+                btn.style.background = 'white';
+                btn.style.color = '#333';
+                btn.style.borderColor = '#cbd5e1';
+            }
+        }
+    });
 
     let cities = region === 'All' 
         ? [...new Set(allPlaces.filter(p => p.type === currentType).map(p => p.city))]
         : [...new Set(allPlaces.filter(p => p.region === region && p.type === currentType).map(p => p.city))];
 
     const cityContainer = document.getElementById('city-tabs-container');
-    cityContainer.innerHTML = `<button onclick="setCity('All')" class="active" id="btn-city-All">All Cities</button>`;
+    cityContainer.innerHTML = `<button onclick="setCity('All')" class="city-btn active" id="btn-city-All">All Cities</button>`;
     
     cities.forEach(city => {
         if (city) {
             const cityId = city.replace(/\s+/g, '-');
-            cityContainer.innerHTML += `<button onclick="setCity('${city}')" id="btn-city-${cityId}">${city}</button>`;
+            cityContainer.innerHTML += `<button onclick="setCity('${city}')" class="city-btn" id="btn-city-${cityId}">${city}</button>`;
         }
     });
     applyFilters();
@@ -212,108 +256,12 @@ function initBoard() {
             + Click to start building your itinerary
         </div>
     `;
-    renderArrivalFlight();
-    renderDepartureFlight();
-}
-
-function renderArrivalFlight() {
-    const box = document.getElementById('arrival-flight-box');
-    box.innerHTML = `
-        <div class="flight-container">
-            <h4>✈️ Arrival Flight (To Vietnam)</h4>
-            <div class="flight-row">
-                <label>From</label> <input type="text" class="arr-from" placeholder="SGN" style="width:60px; text-transform:uppercase;">
-                <label>To</label> <input type="text" class="arr-to" placeholder="HAN" style="width:60px; text-transform:uppercase;">
-                <label style="margin-left: 10px;">Date</label> <input type="date" class="arr-date">
-            </div>
-            <div class="flight-row">
-                <label>Departure (24h)</label> <input type="time" class="arr-time" value="08:00">
-                <label style="margin-left: 10px;">Total Duration</label>
-                <input type="number" class="arr-dur-hr" value="2" min="0" style="width:40px;"> <span style="font-size:12px;">hrs</span>
-                <input type="number" class="arr-dur-min" value="0" min="0" step="10" max="50" style="width:45px;"> <span style="font-size:12px;">mins</span>
-            </div>
-            <div class="flight-row">
-                <label>Booking Ref</label> <input type="text" class="arr-pnr" placeholder="PNR" style="flex:1;">
-                <label style="margin-left: 10px;">Note</label> <input type="text" class="arr-note" placeholder="Note..." style="flex:1;">
-            </div>
-            <div style="margin-top: 8px;">
-                <label style="font-size: 12px; cursor: pointer; color: #512da8; font-weight: bold;">
-                    <input type="checkbox" class="arr-has-transit" onchange="toggleFlightTransit('arr', this)"> 🔄 Has Transit / Layovers
-                </label>
-            </div>
-            <div class="transit-flight-section arr-transit-box">
-                <div id="arr-layovers-container"></div>
-                <button class="btn-add-layover" onclick="addLayover('arr')">+ Add Layover</button>
-            </div>
-        </div>
-    `;
-}
-
-function renderDepartureFlight() {
-    const box = document.getElementById('departure-flight-box');
-    const summaryBox = document.getElementById('itinerary-cost-summary');
-
-    if (dayCount === 0) {
-        box.innerHTML = '';
-        if (summaryBox) summaryBox.style.display = 'none';
-        return;
-    }
-    if (summaryBox) summaryBox.style.display = 'block';
-
-    box.innerHTML = `
-        <div class="flight-container" style="background: #e8eaf6; border-color: #c5cae9;">
-            <h4 style="color: #283593;">✈️ Departure Flight (Back Home - Day ${dayCount})</h4>
-            <div class="flight-row">
-                <label>From</label> <input type="text" class="dep-from" placeholder="HAN" style="width:60px; text-transform:uppercase;">
-                <label>To</label> <input type="text" class="dep-to" placeholder="SGN" style="width:60px; text-transform:uppercase;">
-                <label style="margin-left: 10px;">Date</label> <input type="date" class="dep-date">
-            </div>
-            <div class="flight-row">
-                <label>Departure (24h)</label> <input type="time" class="dep-time" value="18:00">
-                <label style="margin-left: 10px;">Total Duration</label>
-                <input type="number" class="dep-dur-hr" value="2" min="0" style="width:40px;"> <span style="font-size:12px;">hrs</span>
-                <input type="number" class="dep-dur-min" value="0" min="0" step="10" max="50" style="width:45px;"> <span style="font-size:12px;">mins</span>
-            </div>
-            <div class="flight-row">
-                <label>Booking Ref</label> <input type="text" class="dep-pnr" placeholder="PNR" style="flex:1;">
-                <label style="margin-left: 10px;">Note</label> <input type="text" class="dep-note" placeholder="Note..." style="flex:1;">
-            </div>
-            <div style="margin-top: 8px;">
-                <label style="font-size: 12px; cursor: pointer; color: #283593; font-weight: bold;">
-                    <input type="checkbox" class="dep-has-transit" onchange="toggleFlightTransit('dep', this)"> 🔄 Has Transit / Layovers
-                </label>
-            </div>
-            <div class="transit-flight-section dep-transit-box">
-                <div id="dep-layovers-container"></div>
-                <button class="btn-add-layover" onclick="addLayover('dep')">+ Add Layover</button>
-            </div>
-        </div>
-    `;
-    if (typeof updateCostSummary === 'function') updateCostSummary();
-}
-
-function toggleFlightTransit(type, checkbox) {
-    const box = document.querySelector(`.${type}-transit-box`);
-    box.style.display = checkbox.checked ? 'block' : 'none';
-    const container = document.getElementById(`${type}-layovers-container`);
-    if (checkbox.checked && container.children.length === 0) {
-        addLayover(type);
-    }
-}
-
-function addLayover(type) {
-    const container = document.getElementById(`${type}-layovers-container`);
-    const layoverHtml = document.createElement('div');
-    layoverHtml.className = 'flight-row layover-item';
-    layoverHtml.style.marginBottom = '6px';
-    layoverHtml.innerHTML = `
-        <label>Transit At</label> <input type="text" class="layover-airport" placeholder="e.g. SIN" style="width:60px; text-transform:uppercase;">
-        <label style="margin-left:5px;">Duration</label>
-        <input type="number" class="layover-hr" value="1" min="0" style="width:40px;"> <span style="font-size:12px;">hrs</span>
-        <input type="number" class="layover-min" value="30" min="0" step="10" max="50" style="width:45px;"> <span style="font-size:12px;">mins</span>
-        <button class="btn-remove-layover" onclick="this.closest('.layover-item').remove()">✖</button>
-    `;
-    container.appendChild(layoverHtml);
+    
+    // --- THÊM ĐOẠN NÀY ĐỂ ẨN ---
+    const costSummary = document.getElementById('itinerary-cost-summary');
+    const actionBtns = document.querySelector('.static-action-buttons');
+    if (costSummary) costSummary.style.display = 'none';
+    if (actionBtns) actionBtns.style.display = 'none';
 }
 
 function addNewDay() {
@@ -321,6 +269,12 @@ function addNewDay() {
     const board = document.getElementById('itinerary-board');
     const startBtn = document.getElementById('start-btn');
     if (startBtn) startBtn.remove(); 
+
+    // --- THÊM ĐOẠN NÀY ĐỂ HIỆN RA ---
+    const costSummary = document.getElementById('itinerary-cost-summary');
+    const actionBtns = document.querySelector('.static-action-buttons');
+    if (costSummary) costSummary.style.display = 'block';
+    if (actionBtns) actionBtns.style.display = 'flex'; // class static-action-buttons xài flex
 
     let defaultDate = '';
     if (dayCount > 1) {
@@ -364,7 +318,79 @@ function addNewDay() {
     }
 
     bindDropzoneEvents(document.getElementById(`drop-${dayId}`));
-    renderDepartureFlight(); 
+}
+
+// =========================================================================
+// HÀM TẠO NGÀY RIÊNG BIỆT DÀNH CHO MOBILE (Không ảnh hưởng bản web)
+// =========================================================================
+function addMobileNewDay(startTime = '08:00') {
+    dayCount++;
+    const board = document.getElementById('itinerary-board');
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.remove(); 
+    
+    const costSummary = document.getElementById('itinerary-cost-summary');
+    if (costSummary) costSummary.style.display = 'block';
+
+    let defaultDate = '';
+    if (dayCount > 1) {
+        const prevInput = document.querySelector(`#day-${dayCount - 1} .day-date-input`);
+        if (prevInput && prevInput.value) {
+            const prevDate = new Date(prevInput.value);
+            prevDate.setDate(prevDate.getDate() + 1);
+            defaultDate = prevDate.toISOString().split('T')[0];
+        }
+    }
+
+    const dayId = `day-${dayCount}`;
+    
+    // Layout dạng dọc hoàn toàn cố định cho mobile, không flex ngang ngớ ngẩn
+    let dayHtml = `
+        <div class="day-block" id="${dayId}">
+            <div class="day-header" style="display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 class="day-title-text" style="margin: 0; color: #0f172a; font-size: 15px;">Day ${dayCount}</h3>
+                    <button class="btn-remove-day" onclick="removeDay('${dayId}')" style="background: #fee2e2; color: #b91c1c; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">🗑️ Remove</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <input type="date" class="day-date-input" value="${defaultDate}" onchange="updateSubsequentDates(${dayCount})" style="padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; width: 100%; box-sizing: border-box;">
+                    <div style="font-size: 12px; font-weight: bold; color: #64748b; display: flex; align-items: center; gap: 5px;">
+                        Starts at: <input type="time" class="day-start-time" step="900" value="${startTime}" onchange="recalculateTime('${dayId}')" style="padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; flex-grow: 1;">
+                    </div>
+                </div>
+            </div>
+            <div class="dropzone" id="drop-${dayId}" style="min-height: 50px;"></div>
+        </div>
+    `;
+    
+    const addNextBtn = document.getElementById('add-next-day-btn');
+    if (addNextBtn) {
+        addNextBtn.insertAdjacentHTML('beforebegin', dayHtml);
+    } else {
+        board.innerHTML += dayHtml;
+        board.innerHTML += `
+            <div class="add-day-btn faded" id="add-next-day-btn" onclick="addMobileNewDay()">
+                + Click to add next day
+            </div>
+        `;
+    }
+
+    // Tự động gắn nút Add Location riêng cho mobile ngay dưới dropzone
+    setTimeout(() => {
+        let dayBlock = document.getElementById(dayId);
+        if (dayBlock && !dayBlock.querySelector('.mob-action-buttons')) {
+            let dropzone = dayBlock.querySelector('.dropzone');
+            let btnHtml = `
+                <div class="mob-action-buttons" style="display: flex; gap: 8px; margin-top: 15px; padding-top: 12px; border-top: 1px dashed #e2e8f0;">
+                    <button onclick="toggleInlinePicker('${dayId}')" style="flex:1; background: #e0f2fe; color: #0284c7; border: 1px dashed #0284c7; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 12px;">➕ Add Location</button>
+                    <button onclick="addBlankCardDirectly('${dayId}')" style="flex:1; background: #f8fafc; color: #475569; border: 1px dashed #94a3b8; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 12px;">➕ Blank Card</button>
+                </div>
+            `;
+            dropzone.insertAdjacentHTML('afterend', btnHtml);
+        }
+    }, 50);
+
+    bindDropzoneEvents(document.getElementById(`drop-${dayId}`));
 }
 
 function removeDay(dayId) {
@@ -398,6 +424,10 @@ function removeDay(dayId) {
         }
         dateInput.setAttribute('onchange', `updateSubsequentDates(${dayCount})`);
 
+        // Cập nhật lại onclick cho nút remove đúng ID mới
+        const removeBtn = d.querySelector('.btn-remove-day');
+        if (removeBtn) removeBtn.setAttribute('onclick', `removeDay('${newId}')`);
+
         d.querySelectorAll('.duration-input').forEach(inp => {
             inp.setAttribute('onchange', `recalculateTime('${newId}')`);
         });
@@ -408,8 +438,10 @@ function removeDay(dayId) {
     if (dayCount === 0) {
         initBoard();
     } else {
-        renderDepartureFlight();
     }
+
+    // THÊM DÒNG NÀY ĐỂ ÉP RESET TIỀN KHI XÓA NGÀY:
+    if (typeof updateCostSummary === 'function') updateCostSummary();
 }
 
 function updateSubsequentDates(startDay) {
@@ -467,7 +499,7 @@ const transitTemplate = `
                 <option>Bus / Public Transport</option>
                 <option>Walk</option>
             </select>
-            <input type="number" class="transit-minutes" value="30" step="15" onchange="recalculateTime(this.closest('.day-block').id)"> mins
+            <input type="number" class="transit-minutes" value="30" step="5" onchange="recalculateTime(this.closest('.day-block').id)"> mins
             <button class="btn-remove-transit" onclick="removeTransit(this)">Remove</button>
         </div>
     </div>
@@ -493,10 +525,13 @@ function addPlaceToDay(dropzone, placeData, dayId) {
         // Cập nhật lại phần HTML của custom-item trong hàm addPlaceToDay()
         wrapper.innerHTML = `
             <div class="dropped-place ${colorClass}">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div class="time-badge" style="margin-bottom: 0;">00:00 - 00:00</div>
+                    <button class="btn-remove-item" onclick="removeItem(this)" style="background: #fee2e2; color: #b91c1c; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">Remove</button>
+                </div>
                 <div style="flex-grow: 1;">
-                    <div class="time-badge">00:00 - 00:00</div>
                     <div class="custom-inputs">
-                        <select class="custom-type" style="font-weight:bold;" onchange="updateCostSummary()">
+                        <select class="custom-type" style="font-weight:bold; margin-bottom: 6px;" onchange="updateCostSummary()">
                             <option>🏨 Accommodation</option>
                             <option>🍽️ Food & Drink</option>
                             <option>🚙 Transport (Long distance / Car)</option>
@@ -513,10 +548,9 @@ function addPlaceToDay(dropzone, placeData, dayId) {
 
                         <div class="duration-wrapper" style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
                             <label style="font-size:12px;">Duration:</label>
-                            <input type="number" class="duration-input" value="60" step="15" onchange="recalculateTime('${dayId}')" style="width:70px;"> mins
+                            <input type="number" class="duration-input" value="60" step="5" onchange="recalculateTime('${dayId}')" style="width:70px;"> mins
                         </div>
                         
-                        <!-- Khu vực nhập giá và chọn đơn vị tiền tệ riêng cho thẻ trống -->
                         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                             <input type="text" class="custom-price" placeholder="Price (e.g. 500000)" oninput="onCustomPriceInput(this)" style="flex: 1; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
                             <select class="custom-currency-select" onchange="onCustomPriceInput(this)" style="width: 80px; padding: 6px 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: white; cursor: pointer;">
@@ -524,14 +558,12 @@ function addPlaceToDay(dropzone, placeData, dayId) {
                                 <option value="USD">USD</option>
                             </select>
                         </div>
-                        <!-- Dòng phụ chú chữ nghiêng nhỏ hiển thị quy đổi ngược lại -->
                         <div class="custom-price-hint" style="font-size: 11px; font-style: italic; color: #64748b; margin-bottom: 5px; min-height: 14px;"></div>
 
-                        <input type="text" class="custom-link" placeholder="Map Link">
-                        <input type="text" class="custom-note" placeholder="Personal Notes (Booking Ref, Regulations,...">
+                        <input type="text" class="custom-link" placeholder="Map Link" style="margin-bottom: 6px;">
+                        <input type="text" class="custom-note" placeholder="Personal Notes (Booking Ref, Regulations,...)">
                     </div>
                 </div>
-                <button class="btn-remove" onclick="removeItem(this)">Remove</button>
             </div>
         `;
     } else {
@@ -540,20 +572,22 @@ function addPlaceToDay(dropzone, placeData, dayId) {
         
         wrapper.innerHTML = `
             <div class="dropped-place ${colorClass}">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div class="time-badge" style="margin-bottom: 0;">00:00 - 00:00</div>
+                    <button class="btn-remove-item" onclick="removeItem(this)" style="background: #fee2e2; color: #b91c1c; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">Remove</button>
+                </div>
                 <div style="flex-grow: 1;">
-                    <div class="time-badge">00:00 - 00:00</div>
-                    <h4 class="place-title">${placeData.name}</h4>
-                    <div style="display:flex; align-items:center; gap:5px; margin-top:8px;">
+                    <h4 class="place-title" style="margin: 0 0 6px 0;">${placeData.name}</h4>
+                    <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
                         <label style="font-size:12px; color:#555;">Duration:</label>
-                        <input type="number" class="duration-input" value="${placeData.timeToVisit}" step="15" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
+                        <input type="number" class="duration-input" value="${placeData.timeToVisit}" step="5" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
                         <span style="font-size:12px; color:#555;">mins</span>
                         <span class="place-price" data-raw-min="${placeData.price_min || 0}" data-raw-max="${placeData.price_max || 0}" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${priceDisplayStr}</span>
                     </div>
-                    <div style="margin-top: 8px;">
+                    <div style="margin-top: 6px;">
                         <input type="text" class="item-note" placeholder="Personal Note" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
                 </div>
-                <button class="btn-remove" onclick="removeItem(this)">Remove</button>
             </div>
         `;
     }
@@ -701,7 +735,6 @@ function savePDF() {
     if (arrFrom || arrTo || arrPnr) {
         htmlContent += `
             <div style="margin-top: 20px; background: #ede7f6; padding: 12px; border-radius: 6px; border-left: 4px solid #673ab7;">
-                <h3 style="margin: 0 0 6px 0; color: #512da8; font-size: 16px;">✈️ Arrival Flight: ${arrFrom} -> ${arrTo}</h3>
                 <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555; line-height: 1.5;">
                     <li><strong>Date:</strong> ${arrDate ? new Date(arrDate).toLocaleDateString('en-GB') : 'TBD'} | <strong>Time:</strong> ${arrTime}</li>
                     <li><strong>Total Duration:</strong> ${arrHr} hrs ${arrMin} mins</li>
@@ -808,7 +841,6 @@ function savePDF() {
     if (depFrom || depTo || depPnr) {
         htmlContent += `
             <div style="margin-top: 25px; background: #ede7f6; padding: 12px; border-radius: 6px; border-left: 4px solid #673ab7;">
-                <h3 style="margin: 0 0 6px 0; color: #512da8; font-size: 16px;">✈️ Departure Flight: ${depFrom} -> ${depTo}</h3>
                 <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #555; line-height: 1.5;">
                     <li><strong>Date:</strong> ${depDate ? new Date(depDate).toLocaleDateString('en-GB') : 'TBD'} | <strong>Time:</strong> ${depTime}</li>
                     <li><strong>Total Duration:</strong> ${depHr} hrs ${depMin} mins</li>
@@ -1089,28 +1121,6 @@ async function saveToCloud() {
 
     const payload = {
         dayCount: dayCount,
-        arrival: {
-            from: document.querySelector('.arr-from')?.value || '',
-            to: document.querySelector('.arr-to')?.value || '',
-            date: document.querySelector('.arr-date')?.value || '',
-            time: document.querySelector('.arr-time')?.value || '',
-            hr: document.querySelector('.arr-dur-hr')?.value || '',
-            min: document.querySelector('.arr-dur-min')?.value || '',
-            pnr: document.querySelector('.arr-pnr')?.value || '',
-            note: document.querySelector('.arr-note')?.value || '',
-            hasTransit: document.querySelector('.arr-has-transit')?.checked || false
-        },
-        departure: {
-            from: document.querySelector('.dep-from')?.value || '',
-            to: document.querySelector('.dep-to')?.value || '',
-            date: document.querySelector('.dep-date')?.value || '',
-            time: document.querySelector('.dep-time')?.value || '',
-            hr: document.querySelector('.dep-dur-hr')?.value || '',
-            min: document.querySelector('.dep-dur-min')?.value || '',
-            pnr: document.querySelector('.dep-pnr')?.value || '',
-            note: document.querySelector('.dep-note')?.value || '',
-            hasTransit: document.querySelector('.dep-has-transit')?.checked || false
-        },
         days: daysData
     };
 
@@ -1225,7 +1235,6 @@ async function loadDraftById(id) {
         return;
     }
 
-    renderArrivalFlight();
     if (payload.arrival) {
         setTimeout(() => {
             if(document.querySelector('.arr-from')) document.querySelector('.arr-from').value = payload.arrival.from || '';
@@ -1264,7 +1273,7 @@ async function loadDraftById(id) {
                                         <option ${item.method==='Bus / Public Transport'?'selected':''}>Bus / Public Transport</option>
                                         <option ${item.method==='Walk'?'selected':''}>Walk</option>
                                     </select>
-                                    <input type="number" class="transit-minutes" value="${item.minutes || 30}" step="15" onchange="recalculateTime(this.closest('.day-block').id)"> mins
+                                    <input type="number" class="transit-minutes" value="${item.minutes || 30}" step="5" onchange="recalculateTime(this.closest('.day-block').id)"> mins
                                     <button class="btn-remove-transit" onclick="removeTransit(this)">Remove</button>
                                 </div>
                             `;
@@ -1307,7 +1316,6 @@ async function loadDraftById(id) {
         });
     }
 
-    renderDepartureFlight();
     if (payload.departure) {
         setTimeout(() => {
             if(document.querySelector('.dep-from')) document.querySelector('.dep-from').value = payload.departure.from || '';
@@ -1343,7 +1351,10 @@ function openSampleTripsModal() {
 }
 
 function closeSampleTripsModal() {
-    document.getElementById('sample-trips-modal').style.display = 'none';
+    const modal = document.getElementById('sample-trips-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 async function fetchSampleTrips() {
@@ -1517,7 +1528,6 @@ async function useSampleTrip(id) {
         return;
     }
 
-    renderArrivalFlight();
     if (payload.arrival) {
         setTimeout(() => {
             if(document.querySelector('.arr-from')) document.querySelector('.arr-from').value = payload.arrival.from || '';
@@ -1556,7 +1566,7 @@ async function useSampleTrip(id) {
                                         <option ${item.method==='Bus / Public Transport'?'selected':''}>Bus / Public Transport</option>
                                         <option ${item.method==='Walk'?'selected':''}>Walk</option>
                                     </select>
-                                    <input type="number" class="transit-minutes" value="${item.minutes || 30}" step="15" onchange="recalculateTime(this.closest('.day-block').id)"> mins
+                                    <input type="number" class="transit-minutes" value="${item.minutes || 30}" step="5" onchange="recalculateTime(this.closest('.day-block').id)"> mins
                                     <button class="btn-remove-transit" onclick="removeTransit(this)">Remove</button>
                                 </div>
                             `;
@@ -1599,7 +1609,6 @@ async function useSampleTrip(id) {
         });
     }
 
-    renderDepartureFlight();
     if (payload.departure) {
         setTimeout(() => {
             if(document.querySelector('.dep-from')) document.querySelector('.dep-from', '') .value = payload.departure.from || '';
@@ -2211,3 +2220,308 @@ function openBlankCardPicker() {
 
     document.getElementById('place-picker-modal').style.display = 'flex';
 }
+
+// =========================================================================
+// MÃ XỬ LÝ DÀNH RIÊNG CHO GIAO DIỆN MOBILE APP (Hoạt động trên mobile_builder.html)
+// =========================================================================
+
+// 1. Logic chuyển đổi giữa 4 Tab chính (Itinerary, Library, Samples, Profile)
+function activateMobileTab(tabName) {
+    // Ẩn tất cả nội dung tab
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    // Bỏ màu active của tất cả các nút
+    document.querySelectorAll('.mob-tab-btn').forEach(btn => btn.classList.remove('active'));
+
+    // Bật tab tương ứng
+    const targetTab = document.getElementById(`tab-${tabName}`);
+    if (targetTab) targetTab.classList.add('active');
+
+    const targetBtn = document.getElementById(`btn-tab-${tabName}`);
+    if (targetBtn) targetBtn.classList.add('active');
+
+    // Chạy các hàm fetch dữ liệu khi vào tab
+    if (tabName === 'samples') fetchSampleTrips('All');
+    if (tabName === 'profile') {
+        renderMobileProfileStatus();
+        fetchUserDrafts(); 
+    }
+}
+
+// 2. Logic Nút ➕ New ở thanh điều hướng đáy
+async function mobileActionNewTrip() {
+    const hasData = dayCount > 0 || document.querySelectorAll('.timeline-item').length > 0;
+    if (hasData) {
+        let wantToSave = confirm("Do you want to save the current itinerary draft before creating a new trip?");
+        if (wantToSave) await saveToCloud();
+    }
+    startNewItinerary();
+    activateMobileTab('itinerary'); // Nhảy về tab lịch trình
+}
+
+// 3. Render giao diện Profile Tab và Ẩn/Hiện Drafts
+function renderMobileProfileStatus() {
+    const statusBox = document.getElementById('mobile-auth-status');
+    if (!statusBox) return;
+
+    if (currentUser) {
+        statusBox.innerHTML = `
+            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 20px;">
+                <div style="width: 60px; height: 60px; background: #0284c7; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin: 0 auto 10px auto;">
+                    ${currentUser.email.charAt(0).toUpperCase()}
+                </div>
+                <p style="margin: 0 0 15px 0; font-size: 14px; font-weight: bold; color: #0f172a;">${currentUser.email}</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="openProfileModal()" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;">Edit Details</button>
+                    <button onclick="handleAuth()" style="background: #fee2e2; color: #b91c1c; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;">Logout</button>
+                </div>
+            </div>
+            
+            <h4 style="margin: 0 0 15px 0; color: #0f172a; border-bottom: 1px solid #eee; padding-bottom: 5px;">📂 My Saved Drafts</h4>
+            <div id="drafts-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        `;
+    } else {
+        statusBox.innerHTML = `
+            <div style="background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
+                <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Sign in to view your profile and access cloud drafts.</p>
+                <button onclick="handleAuth()" style="background: #10b981; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; font-size: 14px; width: 100%;">Login with Google</button>
+            </div>
+        `;
+    }
+}
+
+// 4. KIỂM TRA MÔI TRƯỜNG VÀ GHI ĐÈ HÀM CHO MOBILE APP
+if (window.location.pathname.includes('m_itinerary_builder.html')) {
+    
+    const bottomBar = document.getElementById('mobile-bottom-bar');
+    if(bottomBar) bottomBar.style.display = 'flex';
+
+    // Ghi đè addNewDay: Thay vì nút dẫn sang tab Library, ta đổi thành mở Inline Picker tại chỗ
+    const originalAddNewDay = window.addNewDay;
+    window.addNewDay = function() {
+        addMobileNewDay();
+        
+        let allDays = document.querySelectorAll('.day-block');
+        if (allDays.length > 0) {
+            let lastDay = allDays[allDays.length - 1];
+            let dropzone = lastDay.querySelector('.dropzone');
+            
+            if (dropzone && !lastDay.querySelector('.mob-action-buttons')) {
+                let btnHtml = `
+                    <div class="mob-action-buttons" style="display: flex; gap: 8px; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e2e8f0;">
+                        <button onclick="toggleInlinePicker('${lastDay.id}')" style="flex:1; background: #e0f2fe; color: #0284c7; border: 1px dashed #0284c7; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px;">➕ Add Location</button>
+                        <button onclick="addBlankCardDirectly('${lastDay.id}')" style="flex:1; background: #f8fafc; color: #475569; border: 1px dashed #94a3b8; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px;">➕ Blank Card</button>
+                    </div>
+                `;
+                dropzone.insertAdjacentHTML('afterend', btnHtml);
+            }
+        }
+    };
+
+// HÀM 1: Bật/Tắt hộp chọn địa điểm ngay trong ngày (Đã tích hợp đủ Region & City)
+    window.toggleInlinePicker = function(dayId) {
+        let dayBlock = document.getElementById(dayId);
+        if (!dayBlock) return;
+
+        let existingPicker = dayBlock.querySelector('.inline-picker-container');
+        if (existingPicker) {
+            existingPicker.remove();
+            return;
+        }
+
+        document.querySelectorAll('.inline-picker-container').forEach(el => el.remove());
+
+        let pickerHtml = `
+            <div class="inline-picker-container" id="picker-${dayId}" data-current-type="attraction" data-current-region="All" data-current-city="All">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="font-size: 13px; color: #0284c7;">Select a Location to Add</strong>
+                    <button onclick="document.getElementById('picker-${dayId}').remove()" style="background:none; border:none; font-weight:bold; cursor:pointer; color:#64748b;">✕</button>
+                </div>
+                <!-- 1. Hàng chọn Loại hình (Locations, F&B, Activities) -->
+                <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+                    <button onclick="filterInlinePickerType('${dayId}', 'attraction')" class="type-btn active-attraction" style="padding:4px; font-size:11px;">Locations</button>
+                    <button onclick="filterInlinePickerType('${dayId}', 'food')" class="type-btn" style="padding:4px; font-size:11px;">F&B</button>
+                    <button onclick="filterInlinePickerType('${dayId}', 'activity')" class="type-btn" style="padding:4px; font-size:11px;">Activities</button>
+                </div>
+                <!-- 2. Hàng chọn Miền (All, North, Central, South) -->
+                <div style="display: flex; gap: 4px; margin-bottom: 6px; overflow-x: auto; padding-bottom: 2px;">
+                    <button onclick="filterInlinePickerRegion('${dayId}', 'All')" class="picker-reg-btn active-reg" style="padding:3px 8px; border-radius:10px; border:1px solid #cbd5e1; background:#0f172a; color:white; font-size:10px; cursor:pointer; white-space:nowrap;">All</button>
+                    <button onclick="filterInlinePickerRegion('${dayId}', 'North')" class="picker-reg-btn" style="padding:3px 8px; border-radius:10px; border:1px solid #cbd5e1; background:white; color:#333; font-size:10px; cursor:pointer; white-space:nowrap;">North</button>
+                    <button onclick="filterInlinePickerRegion('${dayId}', 'Central')" class="picker-reg-btn" style="padding:3px 8px; border-radius:10px; border:1px solid #cbd5e1; background:white; color:#333; font-size:10px; cursor:pointer; white-space:nowrap;">Central</button>
+                    <button onclick="filterInlinePickerRegion('${dayId}', 'South')" class="picker-reg-btn" style="padding:3px 8px; border-radius:10px; border:1px solid #cbd5e1; background:white; color:#333; font-size:10px; cursor:pointer; white-space:nowrap;">South</button>
+                </div>
+                <!-- 3. Hàng chọn Thành phố (Tự động sinh theo miền) -->
+                <div id="picker-city-container-${dayId}" style="display: flex; gap: 4px; margin-bottom: 8px; overflow-x: auto; padding-bottom: 2px;"></div>
+                
+                <!-- 4. Ô tìm kiếm theo tên -->
+                <input type="text" class="picker-search-input" placeholder="Search location name..." oninput="filterInlinePickerQuery('${dayId}', this.value)">
+                
+                <!-- 5. Danh sách kết quả -->
+                <div class="picker-results-list" id="results-${dayId}"></div>
+            </div>
+        `;
+
+        let actionDiv = dayBlock.querySelector('.mob-action-buttons');
+        actionDiv.insertAdjacentHTML('afterend', pickerHtml);
+        
+        // Khởi tạo hiển thị thành phố theo mặc định (All Region, All Type)
+        updatePickerCityList(dayId, 'All', 'attraction');
+        renderInlinePickerResults(dayId);
+    };
+
+    // HÀM 2: Lọc theo Loại hình
+    window.filterInlinePickerType = function(dayId, type) {
+        let picker = document.getElementById(`picker-${dayId}`);
+        if (!picker) return;
+        picker.setAttribute('data-current-type', type);
+
+        let buttons = picker.querySelectorAll(':scope > div:nth-child(2) .type-btn');
+        buttons.forEach(b => {
+            b.className = 'type-btn';
+            if (b.innerText.toLowerCase().includes(type) || (type === 'attraction' && b.innerText === 'Locations')) {
+                if (type === 'attraction') b.classList.add('active-attraction');
+                if (type === 'food') b.classList.add('active-food');
+                if (type === 'activity') b.classList.add('active-activity');
+            }
+        });
+
+        let currentReg = picker.getAttribute('data-current-region') || 'All';
+        updatePickerCityList(dayId, currentReg, type);
+        renderInlinePickerResults(dayId);
+    };
+
+    // HÀM 3: Lọc theo Miền (North, Central, South, All)
+    window.filterInlinePickerRegion = function(dayId, region) {
+        let picker = document.getElementById(`picker-${dayId}`);
+        if (!picker) return;
+        picker.setAttribute('data-current-region', region);
+        picker.setAttribute('data-current-city', 'All'); // Reset city về All khi đổi miền
+
+        picker.querySelectorAll('.picker-reg-btn').forEach(b => {
+            b.style.background = 'white';
+            b.style.color = '#333';
+            b.style.borderColor = '#cbd5e1';
+        });
+        let activeBtn = event.target;
+        activeBtn.style.background = '#0f172a';
+        activeBtn.style.color = 'white';
+        activeBtn.style.borderColor = '#0f172a';
+
+        let currentType = picker.getAttribute('data-current-type') || 'attraction';
+        updatePickerCityList(dayId, region, currentType);
+        renderInlinePickerResults(dayId);
+    };
+
+    // HÀM 4: Cập nhật danh sách nút Thành phố tương ứng
+    window.updatePickerCityList = function(dayId, region, type) {
+        let cityContainer = document.getElementById(`picker-city-container-${dayId}`);
+        if (!cityContainer) return;
+
+        let filtered = allPlaces.filter(p => p.type === type);
+        if (region !== 'All') {
+            filtered = filtered.filter(p => p.region === region);
+        }
+        let cities = [...new Set(filtered.map(p => p.city))].filter(Boolean);
+
+        let html = `<button onclick="filterInlinePickerCity('${dayId}', 'All')" class="picker-city-btn active-city" style="padding:2px 8px; border-radius:10px; border:1px solid #cbd5e1; background:#0f172a; color:white; font-size:10px; cursor:pointer; white-space:nowrap;">All Cities</button>`;
+        cities.forEach(city => {
+            html += `<button onclick="filterInlinePickerCity('${dayId}', '${city}')" class="picker-city-btn" style="padding:2px 8px; border-radius:10px; border:1px solid #cbd5e1; background:white; color:#333; font-size:10px; cursor:pointer; white-space:nowrap;">${city}</button>`;
+        });
+        cityContainer.innerHTML = html;
+    };
+
+    // HÀM 5: Lọc theo Thành phố cụ thể
+    window.filterInlinePickerCity = function(dayId, city) {
+        let picker = document.getElementById(`picker-${dayId}`);
+        if (!picker) return;
+        picker.setAttribute('data-current-city', city);
+
+        picker.querySelectorAll('.picker-city-btn').forEach(b => {
+            b.style.background = 'white';
+            b.style.color = '#333';
+            b.style.borderColor = '#cbd5e1';
+        });
+        event.target.style.background = '#0f172a';
+        event.target.style.color = 'white';
+        event.target.style.borderColor = '#0f172a';
+
+        renderInlinePickerResults(dayId);
+    };
+
+    // HÀM 6: Lọc theo từ khóa tìm kiếm
+    window.filterInlinePickerQuery = function(dayId, query) {
+        renderInlinePickerResults(dayId, query);
+    };
+
+    // HÀM 7: Tổng hợp điều kiện và Render kết quả ra danh sách
+    window.renderInlinePickerResults = function(dayId, searchOverride) {
+        let picker = document.getElementById(`picker-${dayId}`);
+        if (!picker) return;
+
+        let type = picker.getAttribute('data-current-type') || 'attraction';
+        let region = picker.getAttribute('data-current-region') || 'All';
+        let city = picker.getAttribute('data-current-city') || 'All';
+        let queryInput = picker.querySelector('.picker-search-input').value;
+        let query = searchOverride !== undefined ? searchOverride : queryInput;
+
+        let filtered = allPlaces.filter(p => p.type === type);
+        if (region !== 'All') filtered = filtered.filter(p => p.region === region);
+        if (city !== 'All') filtered = filtered.filter(p => p.city === city);
+        if (query && query.trim() !== '') {
+            let q = query.toLowerCase();
+            filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || (p.city && p.city.toLowerCase().includes(q)));
+        }
+
+        let resultsContainer = document.getElementById(`results-${dayId}`);
+        if (!resultsContainer) return;
+
+        if (filtered.length === 0) {
+            resultsContainer.innerHTML = `<p style="font-size: 11px; color: #64748b; text-align: center; margin: 10px 0;">No locations found.</p>`;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(place => {
+            let safeJson = encodeURIComponent(JSON.stringify(place));
+            html += `
+                <div class="picker-item-card" onclick="addPlaceFromInlinePicker('${dayId}', '${safeJson}')">
+                    <img src="${place.image || ''}" alt="">
+                    <div class="picker-item-info">
+                        <h5>${place.name}</h5>
+                        <p>📍 ${place.city || 'N/A'} | ⏱️ ${place.timeToVisit}m</p>
+                    </div>
+                </div>
+            `;
+        });
+        resultsContainer.innerHTML = html;
+    };
+
+    // HÀM 8: Bấm chọn địa điểm -> Tự add thẳng vào ngày đó và đóng khung chọn
+    window.addPlaceFromInlinePicker = function(dayId, encodedPlace) {
+        let place = JSON.parse(decodeURIComponent(encodedPlace));
+        let dropzone = document.getElementById(`drop-${dayId}`);
+        if (dropzone) {
+            addPlaceToDay(dropzone, place, dayId);
+            let picker = document.getElementById(`picker-${dayId}`);
+            if (picker) picker.remove();
+        }
+    };
+}
+
+function checkAndShowMobilePopup() {
+    const isSmallScreen = window.innerWidth <= 768;
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const hasDismissed = sessionStorage.getItem('hideMobilePopup');
+
+    if (isSmallScreen && isTouch && !hasDismissed) {
+        const popup = document.getElementById('mobile-suggest-popup');
+        // ĐỔI 'block' THÀNH 'flex' ĐỂ NÓ CĂN GIỮA NHÉ
+        if (popup) popup.style.display = 'flex'; 
+    }
+}
+
+function dismissMobilePopup() {
+    document.getElementById('mobile-suggest-popup').style.display = 'none';
+    sessionStorage.setItem('hideMobilePopup', 'true');
+}
+
+window.addEventListener('DOMContentLoaded', checkAndShowMobilePopup);

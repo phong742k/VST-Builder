@@ -101,12 +101,21 @@ async function startNewItinerary() {
 
 async function handleAuth() {
     if (currentUser) {
-        hasCheckedProfile = false; // Reset lại cờ khi logout
+        hasCheckedProfile = false; 
         await supabaseClient.auth.signOut();
         alert("Logged out successfully!");
         location.reload();
     } else {
-        const { error } = await supabaseClient.auth.signInWithOAuth({ provider: 'google' });
+        // Lấy đúng đường dẫn hiện tại (đang ở web hay mobile) để sau khi login xong nó redirect về đúng chỗ đó luôn
+        const currentPath = window.location.pathname;
+        const redirectTo = window.location.origin + currentPath;
+
+        const { error } = await supabaseClient.auth.signInWithOAuth({ 
+            provider: 'google',
+            options: {
+                redirectTo: redirectTo
+            }
+        });
         if (error) alert("Login error: " + error.message);
     }
 }
@@ -521,75 +530,150 @@ function addPlaceToDay(dropzone, placeData, dayId) {
     wrapper.addEventListener('dragend', (e) => handleDragEnd(e, wrapper));
     wrapper._placeData = placeData;
 
+    // KIỂM TRA ĐANG Ở BẢN WEB HAY MOBILE ĐỂ DÙNG ĐÚNG GIAO DIỆN
+    const isMobileApp = window.location.pathname.includes('m_itinerary_builder');
+
     if (placeData.isCustom) {
-        // Cập nhật lại phần HTML của custom-item trong hàm addPlaceToDay()
-        wrapper.innerHTML = `
-            <div class="dropped-place ${colorClass}">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <div class="time-badge" style="margin-bottom: 0;">00:00 - 00:00</div>
-                    <button class="btn-remove-item" onclick="removeItem(this)" style="background: #fee2e2; color: #b91c1c; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">Remove</button>
-                </div>
-                <div style="flex-grow: 1;">
-                    <div class="custom-inputs">
-                        <select class="custom-type" style="font-weight:bold; margin-bottom: 6px;" onchange="updateCostSummary()">
-                            <option>🏨 Accommodation</option>
-                            <option>🍽️ Food & Drink</option>
-                            <option>🚙 Transport (Long distance / Car)</option>
-                            <option>🎯 Activity/Destination</option>
-                        </select>
-                        <input type="text" class="custom-title" placeholder="Title (e.g., Hotel Name, Limousine bus to Sapa, ABC Café,...)">
-                        
-                        <div style="margin-bottom: 5px;">
-                            <label style="font-size: 12px; cursor: pointer;">
-                                <input type="checkbox" class="overnight-check" onchange="toggleOvernight(this); recalculateTime('${dayId}')"> 
-                                🌙 Overnight stay / No duration
-                            </label>
-                        </div>
-
-                        <div class="duration-wrapper" style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
-                            <label style="font-size:12px;">Duration:</label>
-                            <input type="number" class="duration-input" value="60" step="5" onchange="recalculateTime('${dayId}')" style="width:70px;"> mins
-                        </div>
-                        
-                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                            <input type="text" class="custom-price" placeholder="Price (e.g. 500000)" oninput="onCustomPriceInput(this)" style="flex: 1; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
-                            <select class="custom-currency-select" onchange="onCustomPriceInput(this)" style="width: 80px; padding: 6px 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: white; cursor: pointer;">
-                                <option value="VND">VND</option>
-                                <option value="USD">USD</option>
+        if (isMobileApp) {
+            // --- GIAO DIỆN THẺ MOBILE (GIỮ NGUYÊN) ---
+            wrapper.innerHTML = `
+                <div class="dropped-place ${colorClass}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div class="time-badge" style="margin-bottom: 0;">00:00 - 00:00</div>
+                        <button class="btn-remove-item" onclick="removeItem(this)" style="background: #fee2e2; color: #b91c1c; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">Remove</button>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div class="custom-inputs">
+                            <select class="custom-type" style="font-weight:bold; margin-bottom: 6px;" onchange="updateCostSummary()">
+                                <option>🏨 Accommodation</option>
+                                <option>🍽️ Food & Drink</option>
+                                <option>🚙 Transport (Long distance / Car)</option>
+                                <option>🎯 Activity/Destination</option>
                             </select>
-                        </div>
-                        <div class="custom-price-hint" style="font-size: 11px; font-style: italic; color: #64748b; margin-bottom: 5px; min-height: 14px;"></div>
+                            <input type="text" class="custom-title" placeholder="Title (e.g., Hotel Name, Limousine bus to Sapa, ABC Café,...)">
+                            
+                            <div style="margin-bottom: 5px;">
+                                <label style="font-size: 12px; cursor: pointer;">
+                                    <input type="checkbox" class="overnight-check" onchange="toggleOvernight(this); recalculateTime('${dayId}')"> 
+                                    🌙 Overnight stay / No duration
+                                </label>
+                            </div>
 
-                        <input type="text" class="custom-link" placeholder="Map Link" style="margin-bottom: 6px;">
-                        <input type="text" class="custom-note" placeholder="Personal Notes (Booking Ref, Regulations,...)">
+                            <div class="duration-wrapper" style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
+                                <label style="font-size:12px;">Duration:</label>
+                                <input type="number" class="duration-input" value="60" step="5" onchange="recalculateTime('${dayId}')" style="width:70px;"> mins
+                            </div>
+                            
+                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                                <input type="text" class="custom-price" placeholder="Price (e.g. 500000)" oninput="onCustomPriceInput(this)" style="flex: 1; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+                                <select class="custom-currency-select" onchange="onCustomPriceInput(this)" style="width: 80px; padding: 6px 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: white; cursor: pointer;">
+                                    <option value="VND">VND</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <div class="custom-price-hint" style="font-size: 11px; font-style: italic; color: #64748b; margin-bottom: 5px; min-height: 14px;"></div>
+
+                            <input type="text" class="custom-link" placeholder="Map Link" style="margin-bottom: 6px;">
+                            <input type="text" class="custom-note" placeholder="Personal Notes (Booking Ref, Regulations,...)">
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            // --- GIAO DIỆN THẺ WEB (PHỤC HỒI NÚT REMOVE BÊN PHẢI) ---
+            wrapper.innerHTML = `
+                <div class="dropped-place ${colorClass}">
+                    <div class="time-badge">00:00 - 00:00</div>
+                    <div style="flex-grow: 1;">
+                        <div class="custom-inputs">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                                <select class="custom-type" style="font-weight:bold; flex-grow: 1; margin-right: 10px;" onchange="updateCostSummary()">
+                                    <option>🏨 Accommodation</option>
+                                    <option>🍽️ Food & Drink</option>
+                                    <option>🚙 Transport (Long distance / Car)</option>
+                                    <option>🎯 Activity/Destination</option>
+                                </select>
+                                <button class="btn-remove" onclick="removeItem(this)">Remove</button>
+                            </div>
+                            <input type="text" class="custom-title" placeholder="Title (e.g., Hotel Name, Limousine bus to Sapa, ABC Café,...)">
+                            
+                            <div style="margin-bottom: 5px;">
+                                <label style="font-size: 12px; cursor: pointer;">
+                                    <input type="checkbox" class="overnight-check" onchange="toggleOvernight(this); recalculateTime('${dayId}')"> 
+                                    🌙 Overnight stay / No duration
+                                </label>
+                            </div>
+
+                            <div class="duration-wrapper" style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
+                                <label style="font-size:12px;">Duration:</label>
+                                <input type="number" class="duration-input" value="60" step="5" onchange="recalculateTime('${dayId}')" style="width:70px;"> mins
+                            </div>
+                            
+                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                                <input type="text" class="custom-price" placeholder="Price (e.g. 500000)" oninput="onCustomPriceInput(this)" style="flex: 1; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+                                <select class="custom-currency-select" onchange="onCustomPriceInput(this)" style="width: 80px; padding: 6px 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: white; cursor: pointer;">
+                                    <option value="VND">VND</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <div class="custom-price-hint" style="font-size: 11px; font-style: italic; color: #64748b; margin-bottom: 5px; min-height: 14px;"></div>
+
+                            <input type="text" class="custom-link" placeholder="Map Link" style="margin-bottom: 6px;">
+                            <input type="text" class="custom-note" placeholder="Personal Notes (Booking Ref, Regulations,...)">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     } else {
         wrapper.setAttribute('data-city', placeData.city || '');
-        let priceDisplayStr = formatPriceDisplay(placeData); // Dùng hàm format chuẩn Min - Max hoặc Free
-        
-        wrapper.innerHTML = `
-            <div class="dropped-place ${colorClass}">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <div class="time-badge" style="margin-bottom: 0;">00:00 - 00:00</div>
-                    <button class="btn-remove-item" onclick="removeItem(this)" style="background: #fee2e2; color: #b91c1c; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">Remove</button>
-                </div>
-                <div style="flex-grow: 1;">
-                    <h4 class="place-title" style="margin: 0 0 6px 0;">${placeData.name}</h4>
-                    <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
-                        <label style="font-size:12px; color:#555;">Duration:</label>
-                        <input type="number" class="duration-input" value="${placeData.timeToVisit}" step="5" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
-                        <span style="font-size:12px; color:#555;">mins</span>
-                        <span class="place-price" data-raw-min="${placeData.price_min || 0}" data-raw-max="${placeData.price_max || 0}" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${priceDisplayStr}</span>
+        let priceDisplayStr = formatPriceDisplay(placeData);
+
+        if (isMobileApp) {
+            // --- GIAO DIỆN THẺ MOBILE (GIỮ NGUYÊN) ---
+            wrapper.innerHTML = `
+                <div class="dropped-place ${colorClass}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div class="time-badge" style="margin-bottom: 0;">00:00 - 00:00</div>
+                        <button class="btn-remove-item" onclick="removeItem(this)" style="background: #fee2e2; color: #b91c1c; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">Remove</button>
                     </div>
-                    <div style="margin-top: 6px;">
-                        <input type="text" class="item-note" placeholder="Personal Note" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
+                    <div style="flex-grow: 1;">
+                        <h4 class="place-title" style="margin: 0 0 6px 0;">${placeData.name}</h4>
+                        <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+                            <label style="font-size:12px; color:#555;">Duration:</label>
+                            <input type="number" class="duration-input" value="${placeData.timeToVisit}" step="5" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
+                            <span style="font-size:12px; color:#555;">mins</span>
+                            <span class="place-price" data-raw-min="${placeData.price_min || 0}" data-raw-max="${placeData.price_max || 0}" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${priceDisplayStr}</span>
+                        </div>
+                        <div style="margin-top: 6px;">
+                            <input type="text" class="item-note" placeholder="Personal Note" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            // --- GIAO DIỆN THẺ WEB (PHỤC HỒI NÚT REMOVE BÊN PHẢI) ---
+            wrapper.innerHTML = `
+                <div class="dropped-place ${colorClass}">
+                    <div class="time-badge">00:00 - 00:00</div>
+                    <div style="flex-grow: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <h4 class="place-title" style="margin: 0 0 5px 0;">${placeData.name}</h4>
+                            <button class="btn-remove" onclick="removeItem(this)">Remove</button>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:5px; margin-top:5px;">
+                            <label style="font-size:12px; color:#555;">Duration:</label>
+                            <input type="number" class="duration-input" value="${placeData.timeToVisit}" step="5" onchange="recalculateTime('${dayId}')" style="width:60px;"> 
+                            <span style="font-size:12px; color:#555;">mins</span>
+                            <span class="place-price" data-raw-min="${placeData.price_min || 0}" data-raw-max="${placeData.price_max || 0}" style="font-size:12px; color:#555; margin-left: 10px;">| Price: ${priceDisplayStr}</span>
+                        </div>
+                        <div style="margin-top: 5px;">
+                            <input type="text" class="item-note" placeholder="Personal Note" style="width: 100%; box-sizing: border-box; padding: 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     dropzone.appendChild(wrapper);
@@ -2525,3 +2609,12 @@ function dismissMobilePopup() {
 }
 
 window.addEventListener('DOMContentLoaded', checkAndShowMobilePopup);
+
+// --- HÀM THÊM TRỰC TIẾP BLANK CARD CHO BẢN MOBILE ---
+window.addBlankCardDirectly = function(dayId) {
+    let dropzone = document.getElementById(`drop-${dayId}`);
+    if (dropzone) {
+        let blankPlace = { isCustom: true, name: 'Custom Blank Card' };
+        addPlaceToDay(dropzone, blankPlace, dayId);
+    }
+};

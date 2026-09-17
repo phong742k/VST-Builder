@@ -2290,7 +2290,7 @@ function renderMobileProfileStatus() {
 }
 
 // 4. KIỂM TRA MÔI TRƯỜNG VÀ GHI ĐÈ HÀM CHO MOBILE APP
-if (window.location.pathname.includes('m_itinerary_builder.html')) {
+if (window.location.pathname.includes('m_itinerary_builder')) {
     
     const bottomBar = document.getElementById('mobile-bottom-bar');
     if(bottomBar) bottomBar.style.display = 'flex';

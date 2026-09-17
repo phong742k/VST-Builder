@@ -1729,6 +1729,10 @@ async function useSampleTrip(id) {
     }
 
     alert(`Successfully loaded "${tpl.title}". You can now customize and save it as your own draft!`);
+
+    if (typeof activateMobileTab === 'function') {
+        activateMobileTab('itinerary');
+    }
 }
 
 // --- HỆ THỐNG TAG CHO SAMPLE TRIPS ---

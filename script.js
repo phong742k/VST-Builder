@@ -1036,7 +1036,10 @@ async function loadProfileData() {
 
 async function loadUserProfile() {
     if (!currentUser) return;
-    document.getElementById('prof-email').value = currentUser.email;
+    
+    // Kiểm tra xem ô input email có tồn tại trên trang hiện tại không (tránh lỗi trên mobile)
+    const emailInput = document.getElementById('prof-email');
+    if (emailInput) emailInput.value = currentUser.email;
 
     const { data } = await supabaseClient
         .from('profiles')
@@ -1045,18 +1048,17 @@ async function loadUserProfile() {
         .maybeSingle();
 
     if (data) {
-        document.getElementById('prof-name').value = data.full_name || '';
-        document.getElementById('prof-country').value = data.country || '';
-        if (data.preference) document.getElementById('prof-pref').value = data.preference;
+        if (document.getElementById('prof-name')) document.getElementById('prof-name').value = data.full_name || '';
+        if (document.getElementById('prof-country')) document.getElementById('prof-country').value = data.country || '';
+        if (document.getElementById('prof-pref') && data.preference) document.getElementById('prof-pref').value = data.preference;
 
-        // Tách số điện thoại thành mã vùng và số phụ nếu có lưu trên DB dạng "+84 912345678"
         if (data.phone) {
             let parts = data.phone.trim().split(' ');
             if (parts.length >= 2) {
-                document.getElementById('prof-country-code').value = parts[0];
-                document.getElementById('prof-phone-number').value = parts.slice(1).join(' ');
+                if (document.getElementById('prof-country-code')) document.getElementById('prof-country-code').value = parts[0];
+                if (document.getElementById('prof-phone-number')) document.getElementById('prof-phone-number').value = parts.slice(1).join(' ');
             } else {
-                document.getElementById('prof-phone-number').value = data.phone;
+                if (document.getElementById('prof-phone-number')) document.getElementById('prof-phone-number').value = data.phone;
             }
         }
     }
@@ -1071,24 +1073,28 @@ async function checkAndEnforceProfileName() {
         .eq('id', currentUser.id)
         .maybeSingle();
 
-    // Đánh dấu là đã check để không bị lặp lại lần 2 trong phiên này
     hasCheckedProfile = true;
 
+    // Nếu đang ở bản mobile mà chưa có tên thì không bắt buộc bật popup profile gây vướng, chỉ load dữ liệu nếu có giao diện
+    const nameInput = document.getElementById('prof-name');
+    
     if (!data || !data.full_name || data.full_name.trim() === '') {
-        alert("Welcome! Please enter your full name to complete your profile setup.");
-        openProfileModal();
+        if (nameInput) { // Chỉ bật popup yêu cầu nhập tên nếu đang đứng ở trang có hỗ trợ modal profile (bản web)
+            alert("Welcome! Please enter your full name to complete your profile setup.");
+            openProfileModal();
+        }
     } else {
-        document.getElementById('prof-email').value = currentUser.email;
-        document.getElementById('prof-name').value = data.full_name || '';
-        document.getElementById('prof-country').value = data.country || '';
-        if (data.preference) document.getElementById('prof-pref').value = data.preference;
+        if (document.getElementById('prof-email')) document.getElementById('prof-email').value = currentUser.email;
+        if (nameInput) nameInput.value = data.full_name || '';
+        if (document.getElementById('prof-country')) document.getElementById('prof-country').value = data.country || '';
+        if (document.getElementById('prof-pref') && data.preference) document.getElementById('prof-pref').value = data.preference;
         if (data.phone) {
             let parts = data.phone.trim().split(' ');
             if (parts.length >= 2) {
-                document.getElementById('prof-country-code').value = parts[0];
-                document.getElementById('prof-phone-number').value = parts.slice(1).join(' ');
+                if (document.getElementById('prof-country-code')) document.getElementById('prof-country-code').value = parts[0];
+                if (document.getElementById('prof-phone-number')) document.getElementById('prof-phone-number').value = parts.slice(1).join(' ');
             } else {
-                document.getElementById('prof-phone-number').value = data.phone;
+                if (document.getElementById('prof-phone-number')) document.getElementById('prof-phone-number').value = data.phone;
             }
         }
     }

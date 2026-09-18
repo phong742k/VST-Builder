@@ -14,7 +14,7 @@ let currentItineraryId = null;
 let currentTemplateId = null;
 
 // Auth State Listener
-supabaseClient.auth.onAuthStateChange(async(event, session) => {
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
     currentUser = session?.user || null;
     const authBtn = document.getElementById('auth-btn');
     const userEmail = document.getElementById('user-email');
@@ -328,7 +328,11 @@ const originalHandleAuth = window.handleAuth;
 window.handleAuth = async function() {
     if (currentUser) {
         hasCheckedProfile = false; 
-        await supabaseClient.auth.signOut();
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) {
+            alert("Error logging out: " + error.message);
+            return;
+        }
         alert("Logged out successfully!");
         location.reload();
     } else {

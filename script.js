@@ -2410,7 +2410,6 @@ function activateMobileTab(tabName) {
     if (tabName === 'samples') fetchSampleTrips('All');
     if (tabName === 'profile') {
         renderMobileProfileStatus();
-        fetchUserDrafts(); 
     }
 }
 

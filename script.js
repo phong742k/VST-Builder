@@ -34,21 +34,23 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
     }
 
     if (currentUser) {
-        if (userEmail) userEmail.innerText = currentUser.email;
-        if (authBtn) {
-            authBtn.innerText = 'Logout';
-            authBtn.style.background = '#d32f2f';
+        if (userEmail) userEmail.style.display = 'none';
+        if (authBtn) authBtn.style.display = 'none'; 
+        if (profileBtn) {
+            profileBtn.style.display = 'flex';
+            // Lấy chữ cái đầu của email làm avatar
+            profileBtn.innerText = currentUser.email.charAt(0).toUpperCase();
         }
-        if (profileBtn) profileBtn.style.display = 'inline-block';
         
         loadUserProfile();
         if (typeof checkAdminPermission === 'function') checkAdminPermission();
         await checkAndEnforceProfileName();
     } else {
-        if (userEmail) userEmail.innerText = '';
+        if (userEmail) userEmail.style.display = 'none';
         if (authBtn) {
             authBtn.innerText = 'Sign In';
-            authBtn.style.background = '#4caf50';
+            authBtn.style.background = '#0d9488';
+            authBtn.style.display = 'block';
         }
         if (profileBtn) profileBtn.style.display = 'none';
     }
@@ -1060,6 +1062,7 @@ function openProfileModal() {
 function closeProfileModal() {
     const modal = document.getElementById('profile-modal');
     if (modal) {
+        lockProfileForm(); // Trả form về trạng thái khóa
         modal.style.display = 'none';
     }
 }
@@ -1190,6 +1193,7 @@ async function saveProfileInfo() {
         alert("Error saving profile: " + error.message);
     } else {
         alert("Profile saved successfully!");
+        lockProfileForm();
         closeProfileModal();
     }
 }
@@ -2897,4 +2901,32 @@ async function handleLogoClick() {
         }
     }
     location.reload(); // Tải lại trang chủ sạch sẽ
+}
+
+function enableEditProfile() {
+    const inputs = ['prof-name', 'prof-country-code', 'prof-phone-number', 'prof-country', 'prof-pref'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.disabled = false;
+            el.style.background = '#fff';
+        }
+    });
+    document.getElementById('modal-logout-btn').style.display = 'none';
+    document.getElementById('modal-save-btn').style.display = 'block';
+    document.getElementById('edit-profile-btn').style.display = 'none';
+}
+
+function lockProfileForm() {
+    const inputs = ['prof-name', 'prof-country-code', 'prof-phone-number', 'prof-country', 'prof-pref'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.disabled = true;
+            el.style.background = '#f9f9f9';
+        }
+    });
+    document.getElementById('modal-logout-btn').style.display = 'block';
+    document.getElementById('modal-save-btn').style.display = 'none';
+    document.getElementById('edit-profile-btn').style.display = 'block';
 }

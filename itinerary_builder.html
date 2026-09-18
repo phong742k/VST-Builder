@@ -157,10 +157,13 @@
         
         <!-- Nhóm tài khoản và chuyển chế độ nằm bên phải -->
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-            <div id="auth-container" style="display: flex; align-items: center; gap: 15px;">
-                <span id="user-email" style="font-size: 13px; font-weight: bold; color: #333;"></span>
-                <button id="profile-btn" onclick="openProfileModal()" style="display:none; background: #2196f3; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">👤 My Profile</button>
-                <button id="auth-btn" onclick="handleAuth()" style="background: #0d9488; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">Sign In</button>
+            <div id="auth-container" style="display: flex; align-items: center; gap: 10px;">
+                <!-- Email ẩn hoàn toàn -->
+                <span id="user-email" style="display: none;"></span>
+                <!-- Nút Sign In (hiển thị khi chưa đăng nhập) -->
+                <button id="auth-btn" onclick="openAuthModal('signin')" style="background: #0d9488; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">Sign In</button>
+                <!-- Nút Avatar tròn (hiển thị khi đã đăng nhập) -->
+                <div id="profile-btn" onclick="openProfileModal()" style="display:none; width: 36px; height: 36px; background: #0284c7; color: white; border-radius: 50%; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">👤</div>
             </div>
             <!-- Nút Mobile Mode nhỏ gọn nằm dưới -->
             <button onclick="window.location.href='m_itinerary_builder.html'" style="background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">📱 Use Mobile Mode</button>
@@ -258,12 +261,15 @@
     <div id="profile-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center;">
         <div style="background: white; width: 500px; max-width: 95%; border-radius: 8px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative;">
             <button onclick="closeProfileModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
-            <h2 style="margin-top: 0; color: #0d47a1; margin-bottom: 20px;">User Personal Profile</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #0d47a1;">User Personal Profile</h2>
+                <button id="edit-profile-btn" onclick="enableEditProfile()" style="background: #f1f5f9; color: #64748b; padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold;">✏️ Edit</button>
+            </div>
             
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 <div>
                     <label style="font-size: 12px; font-weight: bold; color: #555;">Full Name <span style="color: red;">*</span></label>
-                    <input type="text" id="prof-name" placeholder="Your full name" required style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="prof-name" placeholder="Your full name" required disabled style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
                 </div>
                 <div>
                     <label style="font-size: 12px; font-weight: bold; color: #555;">Email (Google Account)</label>
@@ -272,7 +278,7 @@
                 <div>
                     <label style="font-size: 12px; font-weight: bold; color: #555;">Phone Number</label>
                     <div style="display: flex; gap: 8px;">
-                        <select id="prof-country-code" style="width: 110px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #fff;">
+                        <select id="prof-country-code" disabled style="width: 110px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
                             <option>Country</option>
                             <option value="93">Afghanistan  +93</option>
                             <option value="358">Aland Islands  +358</option>
@@ -526,12 +532,12 @@
                             <option value="260">Zambia  +260</option>
                             <option value="263">Zimbabwe  +263</option>
                         </select>
-                        <input type="text" id="prof-phone-number" placeholder="912345678" style="flex: 1; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                        <input type="text" id="prof-phone-number" placeholder="912345678" disabled style="flex: 1; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
                     </div>
                 </div>
                 <div>
                     <label style="font-size: 12px; font-weight: bold; color: #555;">Country / Nationality</label>
-                    <select id="prof-country" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #fff;">
+                    <select id="prof-country" disabled style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
                         <option value="">Select country...</option>
                             <option value="Afghanistan">Afghanistan</option>
                             <option value="Åland Islands">Åland Islands</option>
@@ -789,14 +795,15 @@
                 </div>
                 <div>
                     <label style="font-size: 12px; font-weight: bold; color: #555;">Travel Preferences</label>
-                    <select id="prof-pref" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                    <select id="prof-pref" disabled style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
                         <option>Culture & Heritage</option>
                         <option>Adventure & Trekking</option>
                         <option>Food & Culinary Tours</option>
                         <option>Relaxation & Beaches</option>
                     </select>
                 </div>
-                <button onclick="saveProfileInfo()" style="background: #2196f3; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px;">Save Profile</button>
+                <button id="modal-logout-btn" onclick="handleAuth()" style="background: #d32f2f; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; width: 100%;">🚪 Logout</button>
+                <button id="modal-save-btn" onclick="saveProfileInfo()" style="display: none; background: #2196f3; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; width: 100%;">💾 Save Profile</button>
             </div>
         </div>
     </div>

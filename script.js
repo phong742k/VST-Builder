@@ -47,7 +47,7 @@ supabaseClient.auth.onAuthStateChange(async(event, session) => {
     } else {
         if (userEmail) userEmail.innerText = '';
         if (authBtn) {
-            authBtn.innerText = 'Login with Google';
+            authBtn.innerText = 'Sign In';
             authBtn.style.background = '#4caf50';
         }
         if (profileBtn) profileBtn.style.display = 'none';
@@ -99,26 +99,242 @@ async function startNewItinerary() {
     if (typeof updateCostSummary === 'function') updateCostSummary();
 }
 
-async function handleAuth() {
+// --- ĐIỀU KHIỂN MODAL ĐĂNG NHẬP / ĐĂNG KÝ ---
+function openAuthModal(mode = 'signin') {
+    const modal = document.getElementById('auth-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        switchAuthMode(mode);
+    }
+}
+
+function closeAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function switchAuthMode(mode) {
+    const signinForm = document.getElementById('signin-form');
+    const signupForm = document.getElementById('signup-form');
+    if (signinForm && signupForm) {
+        if (mode === 'signin') {
+            signinForm.style.display = 'block';
+            signupForm.style.display = 'none';
+        } else {
+            signinForm.style.display = 'none';
+            signupForm.style.display = 'block';
+        }
+    }
+}
+
+// --- AUTH HANDLERS & EVENT LISTENERS ---
+let tempEmailForResend = ""; 
+
+// Sign Up Handler
+async function handleEmailSignUp() {
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-password-confirm').value;
+    const errorSpan = document.getElementById('signup-email-error');
+    
+    if (errorSpan) errorSpan.innerText = '';
+
+    if (!email || !password) {
+        if (errorSpan) errorSpan.innerText = 'Please enter both email and password.';
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        if (errorSpan) errorSpan.innerText = 'Password confirmation does not match.';
+        return;
+    }
+
+    const { data, error } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        if (errorSpan) {
+            if (error.message.toLowerCase().includes('already registered')) {
+                errorSpan.innerText = 'This email is already registered.';
+            } else {
+                errorSpan.innerText = error.message;
+            }
+        }
+    } else {
+        alert("Sign up successful! Please check your email to verify your account.");
+        switchAuthMode('signin');
+    }
+}
+
+// Sign In Handler
+async function handleEmailSignIn() {
+    const email = document.getElementById('signin-email').value.trim();
+    const password = document.getElementById('signin-password').value;
+    const errorSpan = document.getElementById('signin-error');
+
+    if (errorSpan) errorSpan.innerText = '';
+
+    if (!email || !password) {
+        if (errorSpan) errorSpan.innerText = 'Please enter both email and password.';
+        return;
+    }
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        if (error.message.toLowerCase().includes('email not confirmed')) {
+            tempEmailForResend = email;
+            const unconfirmedModal = document.getElementById('unconfirmed-modal');
+            if(unconfirmedModal) unconfirmedModal.style.display = 'flex';
+        } else {
+            if (errorSpan) {
+                errorSpan.innerText = 'Invalid email or password.';
+            }
+        }
+    } else {
+        closeAuthModal();
+        location.reload();
+    }
+}
+
+// Realtime Password Strength Validator
+function setupRealtimePasswordCheck(inputId, lenId, letterId, digitId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  input.addEventListener('input', (e) => {
+    const val = e.target.value;
+    const lenEl = document.getElementById(lenId);
+    const letterEl = document.getElementById(letterId);
+    const digitEl = document.getElementById(digitId);
+    
+    if(lenEl) lenEl.style.color = val.length >= 6 ? '#10b981' : '#ef4444';
+    if(letterEl) letterEl.style.color = /[a-zA-Z]/.test(val) ? '#10b981' : '#ef4444';
+    if(digitEl) digitEl.style.color = /\d/.test(val) ? '#10b981' : '#ef4444';
+  });
+}
+
+// Global Event Listeners Initialization on DOM Load
+document.addEventListener('DOMContentLoaded', () => {
+    setupRealtimePasswordCheck('signup-password', 'req-len-up', 'req-letter-up', 'req-digit-up');
+    setupRealtimePasswordCheck('new-password', 'req-len-reset', 'req-letter-reset', 'req-digit-reset');
+
+    // Resend Verification Email
+    const resendBtn = document.getElementById('resend-activation-btn');
+    if(resendBtn) {
+        resendBtn.addEventListener('click', async () => {
+          if (!tempEmailForResend) return;
+          const { error } = await supabaseClient.auth.resend({ type: 'signup', email: tempEmailForResend });
+          if (error) alert("Error: " + error.message);
+          else alert("Verification email resent successfully.");
+        });
+    }
+
+    // Forgot Password Modal Trigger via Event Delegation
+    document.body.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'open-forgot-modal') {
+            e.preventDefault();
+            const forgotModal = document.getElementById('forgot-pw-modal');
+            if(forgotModal) forgotModal.style.display = 'flex';
+        }
+    });
+
+    // Send Password Reset Link
+    const sendResetBtn = document.getElementById('send-reset-link-btn');
+    if(sendResetBtn) {
+        sendResetBtn.addEventListener('click', async () => {
+          const emailInput = document.getElementById('forgot-email');
+          const msgSpan = document.getElementById('forgot-msg');
+          if(!emailInput || !msgSpan) return;
+          
+          const email = emailInput.value;
+          if(!email) {
+              msgSpan.style.color = '#ef4444';
+              msgSpan.innerText = 'Please enter your email.';
+              return;
+          }
+          msgSpan.innerText = 'Sending...'; 
+          msgSpan.style.color = '#64748b';
+
+          const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + window.location.pathname 
+          });
+
+          if (error) {
+            msgSpan.style.color = '#ef4444'; 
+            msgSpan.innerText = error.message;
+          } else {
+            msgSpan.style.color = '#10b981'; 
+            msgSpan.innerText = 'Recovery link sent to your email!';
+          }
+        });
+    }
+
+    // Save New Password Handler
+    const saveNewPwBtn = document.getElementById('save-new-pw-btn');
+    if(saveNewPwBtn) {
+        saveNewPwBtn.addEventListener('click', async () => {
+          const newPasswordInput = document.getElementById('new-password');
+          if(!newPasswordInput) return;
+          
+          const newPassword = newPasswordInput.value;
+          if(!newPassword || newPassword.length < 6) {
+              alert('Password must be at least 6 characters.');
+              return;
+          }
+          const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+          
+          if (error) {
+            alert("Error updating password: " + error.message);
+          } else {
+            alert("Password updated successfully! Please sign in with your new password.");
+            const resetModal = document.getElementById('reset-pw-modal');
+            if(resetModal) resetModal.style.display = 'none';
+            if(typeof openAuthModal === 'function') openAuthModal('signin');
+          }
+        });
+    }
+});
+
+// Listen to Password Recovery Link Click from Email
+if(window.supabaseClient && window.supabaseClient.auth) {
+    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        const resetModal = document.getElementById('reset-pw-modal');
+        if(resetModal) resetModal.style.display = 'flex';
+      }
+    });
+}
+
+// Đăng nhập qua mạng xã hội (Google / Facebook)
+async function handleSocialLogin(providerName) {
+    const currentPath = window.location.pathname;
+    const redirectTo = window.location.origin + currentPath;
+
+    const { error } = await supabaseClient.auth.signInWithOAuth({ 
+        provider: providerName,
+        options: { redirectTo: redirectTo }
+    });
+    if (error) alert("Login error: " + error.message);
+}
+
+// Ghi đè lại nút Logout / Login chính trên Header để hỗ trợ trạng thái mới
+const originalHandleAuth = window.handleAuth;
+window.handleAuth = async function() {
     if (currentUser) {
         hasCheckedProfile = false; 
         await supabaseClient.auth.signOut();
         alert("Logged out successfully!");
         location.reload();
     } else {
-        // Lấy đúng đường dẫn hiện tại (đang ở web hay mobile) để sau khi login xong nó redirect về đúng chỗ đó luôn
-        const currentPath = window.location.pathname;
-        const redirectTo = window.location.origin + currentPath;
-
-        const { error } = await supabaseClient.auth.signInWithOAuth({ 
-            provider: 'google',
-            options: {
-                redirectTo: redirectTo
-            }
-        });
-        if (error) alert("Login error: " + error.message);
+        openAuthModal('signin');
     }
-}
+};
 
 // Fetch places library từ Supabase thay vì Google Sheet
 async function fetchPlacesLibrary() {
@@ -2402,7 +2618,7 @@ function renderMobileProfileStatus() {
         statusBox.innerHTML = `
             <div style="background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
                 <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Sign in to view your profile and access cloud drafts.</p>
-                <button onclick="handleAuth()" style="background: #10b981; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; font-size: 14px; width: 100%;">Login with Google</button>
+                <button onclick="handleAuth()" style="background: #10b981; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; font-size: 14px; width: 100%;">Sign In</button>
             </div>
         `;
     }

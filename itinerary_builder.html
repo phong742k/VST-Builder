@@ -160,7 +160,7 @@
             <div id="auth-container" style="display: flex; align-items: center; gap: 15px;">
                 <span id="user-email" style="font-size: 13px; font-weight: bold; color: #333;"></span>
                 <button id="profile-btn" onclick="openProfileModal()" style="display:none; background: #2196f3; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">👤 My Profile</button>
-                <button id="auth-btn" onclick="handleAuth()" style="background: #4caf50; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">Login with Google</button>
+                <button id="auth-btn" onclick="openAuthModal('signin')" style="background: #0d9488; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">Sign In</button>
             </div>
             <!-- Nút Mobile Mode nhỏ gọn nằm dưới -->
             <button onclick="window.location.href='m_itinerary_builder.html'" style="background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">📱 Use Mobile Mode</button>
@@ -1041,5 +1041,140 @@
         </div>
     </div>
 
+    <!-- ================= AUTH MODAL (EMAIL & SOCIAL) ================= -->
+    <div id="auth-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); position: relative; font-family: sans-serif; box-sizing: border-box;">
+            
+            <button onclick="closeAuthModal()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">&times;</button>
+
+            <!-- SIGN IN FORM -->
+            <div id="signin-form">
+                <h2 style="font-size: 24px; font-weight: bold; color: #111; margin-bottom: 8px; margin-top: 0;">Welcome!</h2>
+                <p style="font-size: 14px; color: #666; margin-bottom: 24px;">Sign in to access your account and continue your journey</p>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px;">Email Address</label>
+                    <input type="email" id="signin-email" placeholder="Enter your email" style="width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px;">Password</label>
+                    <input type="password" id="signin-password" placeholder="Enter your password" style="width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none;">
+                </div>
+
+                <span id="signin-error" style="color: #ef4444; font-size: 12px; display: block; margin-bottom: 10px; min-height: 16px;"></span>
+                <a href="javascript:void(0);" id="open-forgot-modal" style="font-size: 13px; color: #009245; display: block; margin-bottom: 16px; text-decoration: none; font-weight: 600;">Forgot password?</a>
+
+                <button onclick="handleEmailSignIn()" style="width: 100%; background: #009245; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(13,148,136,0.2);">Sign In →</button>
+                
+                <div style="display: flex; align-items: center; margin: 20px 0; color: #cbd5e1;">
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    <span style="padding: 0 10px; font-size: 11px; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">OR CONTINUE WITH</span>
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button onclick="handleSocialLogin('google')" style="width: 100%; background: white; color: #333; border: 1px solid #cbd5e1; padding: 11px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 18px; height: 18px;"> Continue with Google
+                    </button>
+                    <button onclick="handleSocialLogin('facebook')" style="width: 100%; background: #1877f2; color: white; border: none; padding: 11px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <svg style="width: 16px; height: 16px; fill: white;" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> Continue with Facebook
+                    </button>
+                </div>
+
+                <p style="text-align: center; font-size: 13px; color: #666; margin-top: 24px; margin-bottom: 0;">
+                    Don't have an account? <a href="javascript:void(0);" onclick="switchAuthMode('signup')" style="color: #009245; text-decoration: none; font-weight: bold;">Sign up</a>
+                </p>
+            </div>
+
+            <!-- SIGN UP FORM -->
+            <div id="signup-form" style="display: none;">
+                <h2 style="font-size: 24px; font-weight: bold; color: #111; margin-bottom: 8px; margin-top: 0;">Create an account</h2>
+                <p style="font-size: 14px; color: #666; margin-bottom: 24px;">Join us to start planning your custom trips</p>
+                
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px;">Email Address</label>
+                    <input type="email" id="signup-email" placeholder="Enter your email" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none;">
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px;">Password</label>
+                    <input type="password" id="signup-password" placeholder="Create a password" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none;">
+                    <ul id="signup-pw-strength" style="list-style: none; padding: 0; font-size: 12px; margin-top: 6px; margin-bottom: 0;">
+                        <li id="req-len-up" style="color: #ef4444;">• At least 6 characters</li>
+                        <li id="req-letter-up" style="color: #ef4444;">• Contains at least 1 letter</li>
+                        <li id="req-digit-up" style="color: #ef4444;">• Contains at least 1 number</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px;">Confirm Password</label>
+                    <input type="password" id="signup-password-confirm" placeholder="Re-enter your password" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none;">
+                </div>
+
+                <span id="signup-email-error" style="color: #ef4444; font-size: 12px; display: block; margin-bottom: 10px; min-height: 16px;"></span>
+
+                <button onclick="handleEmailSignUp()" style="width: 100%; background: #009245; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(13,148,136,0.2);">Sign Up →</button>
+
+                <div style="display: flex; align-items: center; margin: 18px 0; color: #cbd5e1;">
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    <span style="padding: 0 10px; font-size: 11px; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">OR SIGN UP WITH</span>
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button onclick="handleSocialLogin('google')" style="width: 100%; background: white; color: #333; border: 1px solid #cbd5e1; padding: 11px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 18px; height: 18px;"> Continue with Google
+                    </button>
+                    <button onclick="handleSocialLogin('facebook')" style="width: 100%; background: #1877f2; color: white; border: none; padding: 11px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <svg style="width: 16px; height: 16px; fill: white;" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> Continue with Facebook
+                    </button>
+                </div>
+
+                <p style="text-align: center; font-size: 13px; color: #666; margin-top: 20px; margin-bottom: 0;">
+                    Already have an account? <a href="javascript:void(0);" onclick="switchAuthMode('signin')" style="color: #009245; text-decoration: none; font-weight: bold;">Sign in</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODALS PHỤ TRỢ (UNCONFIRMED, FORGOT, RESET PASSWORD) ĐÃ ĐỒNG BỘ GIAO DIỆN -->
+    <div id="unconfirmed-modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center;">
+        <div style="background: #fff; padding: 25px; width: 100%; max-width: 350px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); text-align: center; font-family: sans-serif;">
+            <h3 style="color: #0f172a; margin-top: 0; font-size: 18px;">Email Not Verified</h3>
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">Please check your inbox to verify your account before signing in.</p>
+            <div style="display: flex; gap: 10px;">
+                <button id="resend-activation-btn" style="flex: 1; padding: 10px; background: #009245; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">Resend Link</button>
+                <button onclick="document.getElementById('unconfirmed-modal').style.display='none'" style="flex: 1; padding: 10px; background: #f1f5f9; color: #475569; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="forgot-pw-modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center;">
+        <div style="background: #fff; padding: 25px; width: 100%; max-width: 350px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-family: sans-serif;">
+            <h3 style="color: #0f172a; margin-top: 0; font-size: 18px;">Reset Password</h3>
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Enter your email to receive a password recovery link.</p>
+            <input type="email" id="forgot-email" placeholder="Enter your email" style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; margin-bottom: 8px; outline: none;">
+            <span id="forgot-msg" style="display: block; font-size: 12px; margin-bottom: 15px; min-height: 16px;"></span>
+            <div style="display: flex; gap: 10px;">
+                <button id="send-reset-link-btn" style="flex: 1; padding: 10px; background: #009245; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">Send Link</button>
+                <button onclick="document.getElementById('forgot-pw-modal').style.display='none'" style="flex: 1; padding: 10px; background: #f1f5f9; color: #475569; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reset-pw-modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center;">
+        <div style="background: #fff; padding: 25px; width: 100%; max-width: 350px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-family: sans-serif;">
+            <h3 style="color: #0f172a; margin-top: 0; font-size: 18px;">Create New Password</h3>
+            <input type="password" id="new-password" placeholder="New password" style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; margin-bottom: 8px; outline: none;">
+            <ul id="reset-pw-strength" style="list-style: none; padding: 0; font-size: 12px; margin-top: 0; margin-bottom: 15px;">
+                <li id="req-len-reset" style="color: #ef4444;">• At least 6 characters</li>
+                <li id="req-letter-reset" style="color: #ef4444;">• Contains at least 1 letter</li>
+                <li id="req-digit-reset" style="color: #ef4444;">• Contains at least 1 number</li>
+            </ul>
+            <button id="save-new-pw-btn" style="width: 100%; padding: 10px; background: #009245; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">Save New Password</button>
+        </div>
+    </div>
 </body>
 </html>

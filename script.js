@@ -38,8 +38,6 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (authBtn) authBtn.style.display = 'none'; 
         if (profileBtn) {
             profileBtn.style.display = 'flex';
-            // Lấy chữ cái đầu của email làm avatar
-            profileBtn.innerText = currentUser.email.charAt(0).toUpperCase();
         }
         
         loadUserProfile();
@@ -1194,7 +1192,6 @@ async function saveProfileInfo() {
     } else {
         alert("Profile saved successfully!");
         lockProfileForm();
-        closeProfileModal();
     }
 }
 

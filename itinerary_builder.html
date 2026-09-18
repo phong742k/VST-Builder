@@ -155,18 +155,15 @@
             <img src="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/VST%20Builder%20Logo.png" alt="VST Logo" style="height: 38px; object-fit: contain;">
         </div>
         
-        <!-- Nhóm tài khoản và chuyển chế độ nằm bên phải -->
-        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+       <!-- Nhóm nút Mobile và Tài khoản nằm ngang -->
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button onclick="window.location.href='m_itinerary_builder.html'" style="background: #f8fafc; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 12px; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">📱 Use Mobile Mode</button>
+            
             <div id="auth-container" style="display: flex; align-items: center; gap: 10px;">
-                <!-- Email ẩn hoàn toàn -->
                 <span id="user-email" style="display: none;"></span>
-                <!-- Nút Sign In (hiển thị khi chưa đăng nhập) -->
-                <button id="auth-btn" onclick="openAuthModal('signin')" style="background: #0d9488; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">Sign In</button>
-                <!-- Nút Avatar tròn (hiển thị khi đã đăng nhập) -->
-                <div id="profile-btn" onclick="openProfileModal()" style="display:none; width: 36px; height: 36px; background: #0284c7; color: white; border-radius: 50%; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">👤</div>
+                <button id="auth-btn" onclick="handleAuth()" style="background: #0d9488; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">Sign In</button>
+                <div id="profile-btn" onclick="openProfileModal()" style="display:none; width: 36px; height: 36px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 50%; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">👤</div>
             </div>
-            <!-- Nút Mobile Mode nhỏ gọn nằm dưới -->
-            <button onclick="window.location.href='m_itinerary_builder.html'" style="background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">📱 Use Mobile Mode</button>
         </div>
     </div>
 
@@ -263,7 +260,7 @@
             <button onclick="closeProfileModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; color: #0d47a1;">User Personal Profile</h2>
-                <button id="edit-profile-btn" onclick="enableEditProfile()" style="background: #f1f5f9; color: #64748b; padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold;">✏️ Edit</button>
+                <button id="edit-profile-btn" onclick="enableEditProfile()" style="margin-right: 25px; background: #f1f5f9; color: #64748b; padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold;">✏️ Edit</button>
             </div>
             
             <div style="display: flex; flex-direction: column; gap: 12px;">

@@ -1053,7 +1053,11 @@ function openProfileModal() {
     const modal = document.getElementById('profile-modal');
     if (modal) {
         modal.style.display = 'flex';
-        loadUserProfile(); // Load dữ liệu cũ vào modal khi bật lên
+        loadUserProfile();
+        // Nếu là giao diện Mobile thì gọi lệnh mở khóa các trường luôn
+        if (window.location.pathname.includes('m_itinerary_builder')) {
+            enableEditProfile();
+        }
     }
 }
 
@@ -1192,6 +1196,14 @@ async function saveProfileInfo() {
     } else {
         alert("Profile saved successfully!");
         lockProfileForm();
+        
+        // Nếu là mobile thì đóng modal và tải lại thông tin ở màn hình ngoài
+        if (window.location.pathname.includes('m_itinerary_builder')) {
+            closeProfileModal();
+            if (typeof renderMobileProfileStatus === 'function') {
+                renderMobileProfileStatus();
+            }
+        }
     }
 }
 
@@ -2414,27 +2426,49 @@ async function mobileActionNewTrip() {
 }
 
 // 3. Render giao diện Profile Tab và Ẩn/Hiện Drafts
-function renderMobileProfileStatus() {
+async function renderMobileProfileStatus() {
     const statusBox = document.getElementById('mobile-auth-status');
     if (!statusBox) return;
 
     if (currentUser) {
+        statusBox.innerHTML = `<p style="text-align: center; color: #64748b; padding: 20px;">Loading profile...</p>`;
+        
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+
+        let name = (profile && profile.full_name) ? profile.full_name : 'N/A';
+        let phone = (profile && profile.phone) ? profile.phone : 'N/A';
+        let country = (profile && profile.country) ? profile.country : 'N/A';
+        let pref = (profile && profile.preference) ? profile.preference : 'N/A';
+
         statusBox.innerHTML = `
-            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 20px;">
-                <div style="width: 60px; height: 60px; background: #0284c7; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin: 0 auto 10px auto;">
-                    ${currentUser.email.charAt(0).toUpperCase()}
+            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <div style="text-align: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
+                    <div style="width: 60px; height: 60px; background: #0284c7; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin: 0 auto 10px auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        ${currentUser.email.charAt(0).toUpperCase()}
+                    </div>
+                    <p style="margin: 0 0 5px 0; font-size: 16px; font-weight: bold; color: #0f172a;">${name}</p>
+                    <p style="margin: 0; font-size: 13px; color: #64748b;">${currentUser.email}</p>
                 </div>
-                <p style="margin: 0 0 15px 0; font-size: 14px; font-weight: bold; color: #0f172a;">${currentUser.email}</p>
+                <div style="font-size: 13px; color: #475569; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between;"><span>📞 Phone:</span> <strong>${phone}</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>🌍 Country:</span> <strong>${country}</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>🎒 Travel Style:</span> <strong style="text-align: right;">${pref}</strong></div>
+                </div>
                 <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button onclick="openProfileModal()" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;">Edit Profile</button>
-                    <button onclick="handleAuth()" style="background: #fee2e2; color: #b91c1c; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;">Logout</button>
+                    <button onclick="openProfileModal()" style="flex: 1; background: #f8fafc; color: #0284c7; border: 1px solid #bae6fd; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px;">✏️ Edit Profile</button>
+                    <button onclick="handleAuth()" style="flex: 1; background: #fee2e2; color: #b91c1c; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px;">🚪 Logout</button>
                 </div>
             </div>
 
-            <button onclick="openSavedLocationsModal()" style="width: 100%; background: #e11d48; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-bottom: 15px; cursor: pointer;">❤️ Saved Locations</button>
-            <h4 style="margin: 0 0 15px 0; color: #0f172a; border-bottom: 1px solid #eee; padding-bottom: 5px;">📂 My Saved Drafts</h4>
+            <button onclick="openSavedLocationsModal()" style="width: 100%; background: #e11d48; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-bottom: 15px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;">❤️ Saved Locations</button>
+            <h4 style="margin: 0 0 15px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">📂 My Saved Drafts</h4>
             <div id="drafts-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
+        fetchUserDrafts();
     } else {
         statusBox.innerHTML = `
             <div style="background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
@@ -2909,9 +2943,13 @@ function enableEditProfile() {
             el.style.background = '#fff';
         }
     });
-    document.getElementById('modal-logout-btn').style.display = 'none';
-    document.getElementById('modal-save-btn').style.display = 'block';
-    document.getElementById('edit-profile-btn').style.display = 'none';
+    const logoutBtn = document.getElementById('modal-logout-btn');
+    const saveBtn = document.getElementById('modal-save-btn');
+    const editBtn = document.getElementById('edit-profile-btn');
+    
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (saveBtn) saveBtn.style.display = 'block';
+    if (editBtn) editBtn.style.display = 'none';
 }
 
 function lockProfileForm() {
@@ -2923,7 +2961,11 @@ function lockProfileForm() {
             el.style.background = '#f9f9f9';
         }
     });
-    document.getElementById('modal-logout-btn').style.display = 'block';
-    document.getElementById('modal-save-btn').style.display = 'none';
-    document.getElementById('edit-profile-btn').style.display = 'block';
+    const logoutBtn = document.getElementById('modal-logout-btn');
+    const saveBtn = document.getElementById('modal-save-btn');
+    const editBtn = document.getElementById('edit-profile-btn');
+    
+    if (logoutBtn) logoutBtn.style.display = 'block';
+    if (saveBtn) saveBtn.style.display = 'none';
+    if (editBtn) editBtn.style.display = 'block';
 }

@@ -2519,7 +2519,7 @@ async function renderMobileProfileStatus() {
                     <span style="font-size: 13px; color: #475569; font-weight: bold;">Theme Mode</span>
                     <div style="display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px;">
                         <button style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: #0f172a; color: white; cursor: default;">📱 Mobile</button>
-                        <button onclick="window.location.href='itinerary_builder_2.html'" style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: transparent; color: #64748b; cursor: pointer;">💻 Web</button>
+                        <button onclick="window.location.href='itinerary_builder.html'" style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: transparent; color: #64748b; cursor: pointer;">💻 Web</button>
                     </div>
                 </div>
             </div>

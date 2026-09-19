@@ -1491,9 +1491,10 @@
 
         // 1. Tải file mẫu CSV chuẩn form để điền dữ liệu
         function downloadPlaceTemplate() {
-            const csvContent = "type,region,city,name,address,mapLink,image,description,timeToVisit,price\n" +
-                            "attraction,North,Hanoi,Hanoi Opera House,1 Trang Tien Hoan Kiem,https://maps.app.goo.gl/RRN1f4DLrCXTxnWD6,https://media-cdn.tripadvisor.com/media/attractions-splice-spp-674x446/12/78/74/95.jpg,Evening,https://example.com/image.jpg,Historical French colonial opera house,60,30000 VND\n" +
-                            "food,North,Hanoi,Bun Cha Huong Lien,24 Le Van Huu Hai Ba Trung,https://maps.app.goo.gl/6AxUMaQJmfVUBH6i6,https://example.com/food.jpg,Famous bun cha restaurant,45,50000 - 100000 VND";
+            // Cập nhật header: Thay 'price' thành 'price_min,price_max'
+            const csvContent = "type,region,city,name,address,mapLink,image,description,timeToVisit,price_min,price_max\n" +
+                            "attraction,North,Hanoi,Hanoi Opera House,1 Trang Tien Hoan Kiem,https://maps.app.goo.gl/RRN1f4DLrCXTxnWD6,https://media-cdn.tripadvisor.com/media/attractions-splice-spp-674x446/12/78/74/95.jpg,Evening,https://example.com/image.jpg,Historical French colonial opera house,60,30000,30000\n" +
+                            "food,North,Hanoi,Bun Cha Huong Lien,24 Le Van Huu Hai Ba Trung,https://maps.app.goo.gl/6AxUMaQJmfVUBH6i6,https://example.com/food.jpg,Famous bun cha restaurant,45,50000,100000";
             
             const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -1542,56 +1543,64 @@
 
         // Hàm phụ trợ bóc tách chuỗi CSV thành mảng JSON objects chuẩn
         function parseCSV(text) {
-        const lines = text.split(/\r\n|\n/);
-        if (lines.length < 2) return [];
+            const lines = text.split(/\r\n|\n/);
+            if (lines.length < 2) return [];
 
-        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-        let result = [];
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            let result = [];
 
-        for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            
-            let row = [];
-            let inQuotes = false;
-            let entry = '';
-            
-            for (let char of lines[i]) {
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    row.push(entry.trim().replace(/^"|"$/g, ''));
-                    entry = '';
-                } else {
-                    entry += char;
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                let row = [];
+                let inQuotes = false;
+                let entry = '';
+                
+                for (let char of lines[i]) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(entry.trim().replace(/^"|"$/g, ''));
+                        entry = '';
+                    } else {
+                        entry += char;
+                    }
                 }
-            }
-            row.push(entry.trim().replace(/^"|"$/g, ''));
+                row.push(entry.trim().replace(/^"|"$/g, ''));
 
-            let obj = {};
-            for (let j = 0; j < headers.length; j++) {
-                let val = row[j] || '';
-                if (headers[j] === 'timeToVisit') {
-                    val = parseInt(val) || 60;
+                let obj = {};
+                for (let j = 0; j < headers.length; j++) {
+                    let val = row[j] || '';
+                    if (headers[j] === 'timeToVisit') {
+                        val = parseInt(val) || 60;
+                    } else if (headers[j] === 'price_min' || headers[j] === 'price_max') {
+                        // Ép kiểu dữ liệu về số nguyên thuần tuý, lọc bỏ chữ (VND, đ...) nếu lỡ nhập nhầm
+                        val = parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 0;
+                    }
+                    obj[headers[j]] = val;
                 }
-                obj[headers[j]] = val;
+
+                // Tự động gán max = min nếu file chỉ điền cột min mà bỏ trống max
+                if (obj['price_min'] !== undefined && (!obj['price_max'] || obj['price_max'] === 0)) {
+                    obj['price_max'] = obj['price_min'];
+                }
+
+                // QUAN TRỌNG: Xóa bỏ trường id trong file CSV để Supabase tự sinh ID số tự động tăng
+                delete obj.id;
+
+                // Đảm bảo type và region không bị lệch chữ hoa chữ thường
+                if (obj.type) obj.type = obj.type.toLowerCase().trim();
+                if (obj.region) {
+                    let r = obj.region.toLowerCase();
+                    if (r.includes('north')) obj.region = 'North';
+                    else if (r.includes('central')) obj.region = 'Central';
+                    else if (r.includes('south')) obj.region = 'South';
+                }
+
+                result.push(obj);
             }
-
-            // QUAN TRỌNG: Xóa bỏ trường id trong file CSV để Supabase tự sinh ID số tự động tăng giống hệt lúc tạo thủ công
-            delete obj.id;
-
-            // Đảm bảo type và region không bị lệch chữ hoa chữ thường
-            if (obj.type) obj.type = obj.type.toLowerCase().trim();
-            if (obj.region) {
-                let r = obj.region.toLowerCase();
-                if (r.includes('north')) obj.region = 'North';
-                else if (r.includes('central')) obj.region = 'Central';
-                else if (r.includes('south')) obj.region = 'South';
-            }
-
-            result.push(obj);
+            return result;
         }
-        return result;
-    }
 
     // Gọi khi chuyển sang tab Khách hàng
     let allCustomerData = [];

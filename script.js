@@ -2441,6 +2441,16 @@ async function renderMobileProfileStatus() {
     const statusBox = document.getElementById('mobile-auth-status');
     if (!statusBox) return;
 
+    // Đọc lại currency đã lưu (kiểm tra cả trường hợp khách và user)
+    let savedCurrency = 'VND';
+    if (typeof currentUser !== 'undefined' && currentUser) {
+        savedCurrency = localStorage.getItem('vst_currency_' + currentUser.id) || 'VND';
+    } else {
+        savedCurrency = localStorage.getItem('vst_currency') || 'VND';
+    }
+
+    let authHtml = '';
+
     if (currentUser) {
         statusBox.innerHTML = `<p style="text-align: center; color: #64748b; padding: 20px;">Loading profile...</p>`;
         
@@ -2455,10 +2465,7 @@ async function renderMobileProfileStatus() {
         let country = (profile && profile.country) ? profile.country : 'N/A';
         let pref = (profile && profile.preference) ? profile.preference : 'N/A';
 
-        // Đọc lại currency account đã lưu, mặc định VND
-        let savedCurrency = localStorage.getItem('vst_currency_' + currentUser.id) || 'VND';
-
-        statusBox.innerHTML = `
+        authHtml = `
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                 <div style="text-align: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
                     <div style="width: 60px; height: 60px; background: #0284c7; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin: 0 auto 10px auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
@@ -2479,42 +2486,48 @@ async function renderMobileProfileStatus() {
                     <button onclick="handleAuth()" style="flex: 1; background: #fee2e2; color: #b91c1c; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px;">🚪 Logout</button>
                 </div>
 
-                <!-- Dòng Nút Mới: Saved Locations & My Drafts -->
-                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
+                <div style="display: flex; gap: 10px; justify-content: center;">
                     <button onclick="openSavedLocationsModal()" style="flex: 1; background: #e11d48; color: white; border: none; padding: 12px 5px; border-radius: 8px; font-weight: bold; font-size: 13px; display: flex; justify-content: center; align-items: center; gap: 5px;">❤️ Saved Locations</button>
                     <button onclick="openDraftsModal()" style="flex: 1; background: #f59e0b; color: white; border: none; padding: 12px 5px; border-radius: 8px; font-weight: bold; font-size: 13px; display: flex; justify-content: center; align-items: center; gap: 5px;">📂 My Drafts</button>
-                </div>
-
-                <!-- Vùng Settings Mới -->
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    <h4 style="margin: 0; color: #0f172a; font-size: 14px;">⚙️ App Settings</h4>
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 13px; color: #475569; font-weight: bold;">Currency</span>
-                        <div style="display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px;">
-                            <button onclick="switchUserCurrency('VND')" id="prof-curr-vnd" style="padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; ${savedCurrency === 'VND' ? 'background: #0f172a; color: white;' : 'background: transparent; color: #64748b;'}">VND</button>
-                            <button onclick="switchUserCurrency('USD')" id="prof-curr-usd" style="padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; ${savedCurrency === 'USD' ? 'background: #0f172a; color: white;' : 'background: transparent; color: #64748b;'}">USD</button>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 13px; color: #475569; font-weight: bold;">Theme Mode</span>
-                        <div style="display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px;">
-                            <button style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: #0f172a; color: white; cursor: default;">📱 Mobile</button>
-                            <button onclick="window.location.href='itinerary_builder_2.html'" style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: transparent; color: #64748b; cursor: pointer;">💻 Web</button>
-                        </div>
-                    </div>
                 </div>
             </div>
         `;
     } else {
-        statusBox.innerHTML = `
-            <div style="background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
-                <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Sign in to view your profile and settings.</p>
+        authHtml = `
+            <div style="background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Sign in to view your profile and saved items.</p>
                 <button onclick="handleAuth()" style="background: #10b981; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; font-size: 14px; width: 100%;">Sign In</button>
             </div>
         `;
     }
+
+    // Cụm Settings nằm độc lập, luôn được nối vào cuối cùng
+    let settingsHtml = `
+        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h4 style="margin: 0 0 15px 0; color: #0f172a; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">⚙️ App Settings</h4>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; color: #475569; font-weight: bold;">Currency</span>
+                    <div style="display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px;">
+                        <button onclick="switchUserCurrency('VND')" id="prof-curr-vnd" style="padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; ${savedCurrency === 'VND' ? 'background: #0f172a; color: white;' : 'background: transparent; color: #64748b;'}">VND</button>
+                        <button onclick="switchUserCurrency('USD')" id="prof-curr-usd" style="padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; ${savedCurrency === 'USD' ? 'background: #0f172a; color: white;' : 'background: transparent; color: #64748b;'}">USD</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; color: #475569; font-weight: bold;">Theme Mode</span>
+                    <div style="display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px;">
+                        <button style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: #0f172a; color: white; cursor: default;">📱 Mobile</button>
+                        <button onclick="window.location.href='itinerary_builder_2.html'" style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: transparent; color: #64748b; cursor: pointer;">💻 Web</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Render cả 2 block ra giao diện
+    statusBox.innerHTML = authHtml + settingsHtml;
 }
 
 // 4. KIỂM TRA MÔI TRƯỜNG VÀ GHI ĐÈ HÀM CHO MOBILE APP

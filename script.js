@@ -20,7 +20,6 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
     const userEmail = document.getElementById('user-email');
     const profileBtn = document.getElementById('profile-btn');
 
-    // Mở khóa giao diện - Dùng if để chống Crash nếu thẻ HTML không tồn tại trên mobile
     const guestLock = document.getElementById('guest-lock-screen');
     const dashSelector = document.getElementById('dashboard-selector');
     const mainApp = document.getElementById('main-app-container');
@@ -34,16 +33,24 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
     }
 
     if (currentUser) {
+        // --- THÊM DÒNG NÀY ĐỂ AUTO LOAD CURRENCY THEO TÀI KHOẢN ---
+        let savedCurr = localStorage.getItem('vst_currency_' + currentUser.id);
+        if (savedCurr) {
+            switchUserCurrency(savedCurr);
+        }
+
         if (userEmail) userEmail.style.display = 'none';
         if (authBtn) authBtn.style.display = 'none'; 
-        if (profileBtn) {
-            profileBtn.style.display = 'flex';
-        }
+        if (profileBtn) profileBtn.style.display = 'flex';
         
         loadUserProfile();
         if (typeof checkAdminPermission === 'function') checkAdminPermission();
         await checkAndEnforceProfileName();
     } else {
+        // Load fallback currency nếu khách chưa login
+        let guestCurr = localStorage.getItem('vst_currency');
+        if (guestCurr) switchUserCurrency(guestCurr);
+
         if (userEmail) userEmail.style.display = 'none';
         if (authBtn) {
             authBtn.innerText = 'Sign In';
@@ -53,7 +60,6 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (profileBtn) profileBtn.style.display = 'none';
     }
 
-    // Tự động load dữ liệu Profile vào tab Mobile nếu đang chạy file mobile
     if (typeof renderMobileProfileStatus === 'function') renderMobileProfileStatus();
 });
 
@@ -2113,55 +2119,61 @@ initUserCurrencySettings();
 function switchUserCurrency(unit) {
     currentCurrencyUnit = unit;
     
-    // Đổi màu cho 2 nút VND / USD ở menu nổi góc phải
+    // Lưu cấu hình vào thiết bị, đính kèm ID để phân biệt Account
+    if (typeof currentUser !== 'undefined' && currentUser) {
+        localStorage.setItem('vst_currency_' + currentUser.id, unit);
+    } else {
+        localStorage.setItem('vst_currency', unit); // Dành cho khách chưa login
+    }
+    
+    // Đổi màu cho 2 nút VND / USD (Menu Floating cũ nếu web còn dùng)
     const vndBtn = document.getElementById('float-curr-vnd');
     const usdBtn = document.getElementById('float-curr-usd');
-    
     if (vndBtn && usdBtn) {
         if (unit === 'VND') {
-            vndBtn.style.background = '#0f172a';
-            vndBtn.style.color = 'white';
-            usdBtn.style.background = 'transparent';
-            usdBtn.style.color = '#64748b';
+            vndBtn.style.background = '#0f172a'; vndBtn.style.color = 'white';
+            usdBtn.style.background = 'transparent'; usdBtn.style.color = '#64748b';
         } else {
-            usdBtn.style.background = '#0f172a';
-            usdBtn.style.color = 'white';
-            vndBtn.style.background = 'transparent';
-            vndBtn.style.color = '#64748b';
+            usdBtn.style.background = '#0f172a'; usdBtn.style.color = 'white';
+            vndBtn.style.background = 'transparent'; vndBtn.style.color = '#64748b';
         }
     }
 
-    // Cập nhật lại giá tiền trên modal và toàn bộ card bên ngoài
+    // Đổi màu cho nút bên trong Setting Profile Tab
+    const profVndBtn = document.getElementById('prof-curr-vnd');
+    const profUsdBtn = document.getElementById('prof-curr-usd');
+    if (profVndBtn && profUsdBtn) {
+        if (unit === 'VND') {
+            profVndBtn.style.background = '#0f172a'; profVndBtn.style.color = 'white';
+            profUsdBtn.style.background = 'transparent'; profUsdBtn.style.color = '#64748b';
+        } else {
+            profUsdBtn.style.background = '#0f172a'; profUsdBtn.style.color = 'white';
+            profVndBtn.style.background = 'transparent'; profVndBtn.style.color = '#64748b';
+        }
+    }
+
     const modalPriceEl = document.getElementById('modal-price');
     if (modalPriceEl && typeof currentActivePlace !== 'undefined' && currentActivePlace) {
         modalPriceEl.innerText = formatPriceDisplay(currentActivePlace.price);
     }
 
-    if (typeof applyFilters === 'function') {
-        applyFilters();
-    }
+    if (typeof applyFilters === 'function') applyFilters();
     if (typeof updateCostSummary === 'function') updateCostSummary();
 
-    // Bổ sung đoạn này vào bên trong hàm switchUserCurrency(unit)
     document.querySelectorAll('.day-block .timeline-item').forEach(item => {
-        // 1. Cập nhật card địa điểm chuẩn trong lịch trình
         let priceSpan = item.querySelector('.place-price');
         if (priceSpan) {
-            // Lấy lại giá gốc từ thuộc tính hoặc text, ở đây ta gọi format lại dựa vào text hiện tại
             let rawText = priceSpan.getAttribute('data-raw-price') || priceSpan.innerText.replace('| Price: ', '').trim();
-            priceSpan.setAttribute('data-raw-price', rawText); // Lưu vết giá gốc
+            priceSpan.setAttribute('data-raw-price', rawText);
             priceSpan.innerText = `| Price: ${formatPriceDisplay(rawText)}`;
         }
     });
 
-    // Thêm đoạn này vào bên trong hàm switchUserCurrency(unit)
     document.querySelectorAll('.day-block .timeline-item.place-item').forEach(item => {
         let priceSpan = item.querySelector('.place-price');
         if (priceSpan) {
             let min = parseFloat(priceSpan.getAttribute('data-raw-min')) || 0;
             let max = parseFloat(priceSpan.getAttribute('data-raw-max')) || min;
-            
-            // Tạo lại object giả lập để gọi hàm formatPriceDisplay theo unit mới
             let tempPlace = { price_min: min, price_max: max };
             priceSpan.innerText = `| Price: ${formatPriceDisplay(tempPlace, unit)}`;
         }
@@ -2443,6 +2455,9 @@ async function renderMobileProfileStatus() {
         let country = (profile && profile.country) ? profile.country : 'N/A';
         let pref = (profile && profile.preference) ? profile.preference : 'N/A';
 
+        // Đọc lại currency account đã lưu, mặc định VND
+        let savedCurrency = localStorage.getItem('vst_currency_' + currentUser.id) || 'VND';
+
         statusBox.innerHTML = `
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                 <div style="text-align: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
@@ -2452,26 +2467,50 @@ async function renderMobileProfileStatus() {
                     <p style="margin: 0 0 5px 0; font-size: 16px; font-weight: bold; color: #0f172a;">${name}</p>
                     <p style="margin: 0; font-size: 13px; color: #64748b;">${currentUser.email}</p>
                 </div>
+                
                 <div style="font-size: 13px; color: #475569; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between;"><span>📞 Phone:</span> <strong>${phone}</strong></div>
                     <div style="display: flex; justify-content: space-between;"><span>🌍 Country:</span> <strong>${country}</strong></div>
                     <div style="display: flex; justify-content: space-between;"><span>🎒 Travel Style:</span> <strong style="text-align: right;">${pref}</strong></div>
                 </div>
-                <div style="display: flex; gap: 10px; justify-content: center;">
+
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
                     <button onclick="openProfileModal()" style="flex: 1; background: #f8fafc; color: #0284c7; border: 1px solid #bae6fd; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px;">✏️ Edit Profile</button>
                     <button onclick="handleAuth()" style="flex: 1; background: #fee2e2; color: #b91c1c; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 13px;">🚪 Logout</button>
                 </div>
-            </div>
 
-            <button onclick="openSavedLocationsModal()" style="width: 100%; background: #e11d48; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-bottom: 15px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;">❤️ Saved Locations</button>
-            <h4 style="margin: 0 0 15px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">📂 My Saved Drafts</h4>
-            <div id="drafts-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                <!-- Dòng Nút Mới: Saved Locations & My Drafts -->
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
+                    <button onclick="openSavedLocationsModal()" style="flex: 1; background: #e11d48; color: white; border: none; padding: 12px 5px; border-radius: 8px; font-weight: bold; font-size: 13px; display: flex; justify-content: center; align-items: center; gap: 5px;">❤️ Saved Locations</button>
+                    <button onclick="openDraftsModal()" style="flex: 1; background: #f59e0b; color: white; border: none; padding: 12px 5px; border-radius: 8px; font-weight: bold; font-size: 13px; display: flex; justify-content: center; align-items: center; gap: 5px;">📂 My Drafts</button>
+                </div>
+
+                <!-- Vùng Settings Mới -->
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <h4 style="margin: 0; color: #0f172a; font-size: 14px;">⚙️ App Settings</h4>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; color: #475569; font-weight: bold;">Currency</span>
+                        <div style="display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px;">
+                            <button onclick="switchUserCurrency('VND')" id="prof-curr-vnd" style="padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; ${savedCurrency === 'VND' ? 'background: #0f172a; color: white;' : 'background: transparent; color: #64748b;'}">VND</button>
+                            <button onclick="switchUserCurrency('USD')" id="prof-curr-usd" style="padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; ${savedCurrency === 'USD' ? 'background: #0f172a; color: white;' : 'background: transparent; color: #64748b;'}">USD</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; color: #475569; font-weight: bold;">Theme Mode</span>
+                        <div style="display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px;">
+                            <button style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: #0f172a; color: white; cursor: default;">📱 Mobile</button>
+                            <button onclick="window.location.href='itinerary_builder_2.html'" style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; background: transparent; color: #64748b; cursor: pointer;">💻 Web</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
-        fetchUserDrafts();
     } else {
         statusBox.innerHTML = `
             <div style="background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
-                <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Sign in to view your profile and access cloud drafts.</p>
+                <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">Sign in to view your profile and settings.</p>
                 <button onclick="handleAuth()" style="background: #10b981; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; font-size: 14px; width: 100%;">Sign In</button>
             </div>
         `;

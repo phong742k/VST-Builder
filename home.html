@@ -200,13 +200,13 @@
         <!-- NEWS SECTION (Dữ liệu kéo từ Supabase) -->
         <section id="news" class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
-                    <div>
+                <div class="flex flex-col md:flex-row justify-between items-center md:items-end mb-12 gap-6">
+                    <div class="text-center md:text-left w-full md:w-auto">
                         <h2 data-i18n="news_title" class="text-3xl font-bold text-gray-900 mb-4">Bài viết về Du lịch Bền vững</h2>
-                        <div class="w-24 h-1 bg-brand rounded-full"></div>
+                        <div class="w-24 h-1 bg-brand rounded-full mx-auto md:mx-0"></div>
                     </div>
                     <!-- Filter UI -->
-                    <div class="flex flex-wrap gap-2" id="filter-container">
+                    <div class="flex flex-wrap justify-center md:justify-end gap-2 w-full md:w-auto" id="filter-container">
                         <button onclick="filterPosts('Tất cả', this)" data-i18n="filter_all" class="filter-btn px-4 py-2 rounded-full bg-brand text-white text-sm font-medium shadow-sm transition">Tất cả</button>
                         <button onclick="filterPosts('Cá nhân', this)" data-i18n="filter_personal" class="filter-btn px-4 py-2 rounded-full bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 text-sm font-medium transition">Cá nhân</button>
                         <button onclick="filterPosts('Tổ chức', this)" data-i18n="filter_org" class="filter-btn px-4 py-2 rounded-full bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 text-sm font-medium transition">Tổ chức</button>

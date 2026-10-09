@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VST Builder - Quản Trị Blog & Bài Viết</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 4px; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { light: '#dcfce7', DEFAULT: '#22c55e', dark: '#166534' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-brand text-white rounded-lg flex items-center justify-center text-xl shadow-md">
+                <i class="fa-solid fa-pen-nib"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-gray-900">VST Blog Admin Portal</h1>
+                <p class="text-xs text-gray-500">Quản lý bài viết Supabase (VN / EN)</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="home.html" target="_blank" class="text-sm text-brand font-semibold hover:underline flex items-center gap-1">
+                <i class="fa-solid fa-globe"></i> Xem trang chủ
+            </a>
+            <button onclick="openEditorModal()" class="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-lg font-medium text-sm transition shadow-md flex items-center gap-2">
+                <i class="fa-solid fa-plus"></i> Viết bài mới
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl w-full mx-auto p-6 flex-grow">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Danh sách bài viết từ Supabase</h2>
+                <span id="post-count" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-semibold">Đang tải...</span>
+            </div>
+            <div id="admin-posts-list" class="space-y-4">
+                <div class="text-center py-12 text-gray-400">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p class="text-sm">Đang kết nối cơ sở dữ liệu Supabase...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL SOẠN THẢO -->
+    <div id="editor-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <h3 id="modal-title" class="font-bold text-lg text-gray-900">Viết Bài Viết Mới</h3>
+                <button onclick="closeEditorModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 flex-grow">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tiêu đề bài viết <span class="text-red-500">*</span></label>
+                        <input type="text" id="post-title" placeholder="Nhập tiêu đề hấp dẫn..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Ngôn ngữ <span class="text-red-500">*</span></label>
+                        <select id="post-lang" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm bg-white font-bold text-brand-dark">
+                            <option value="vi">Tiếng Việt (VN)</option>
+                            <option value="en">English (EN)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Đối tượng hướng tới (Chọn 1 hoặc nhiều) <span class="text-red-500">*</span></label>
+                    <div class="flex flex-wrap gap-6 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <label class="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                            <input type="checkbox" name="post-cat" value="Cá nhân" class="w-4 h-4 text-brand rounded focus:ring-brand"> Cá nhân
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                            <input type="checkbox" name="post-cat" value="Tổ chức" class="w-4 h-4 text-brand rounded focus:ring-brand"> Tổ chức
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                            <input type="checkbox" name="post-cat" value="Khách du lịch" class="w-4 h-4 text-brand rounded focus:ring-brand"> Khách du lịch
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Link Ảnh Bìa (Cover)</label>
+                    <input type="url" id="post-cover" placeholder="https://..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm">
+                </div>
+
+                <hr class="border-gray-200">
+
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-xs font-bold text-gray-700 uppercase">Nội dung chi tiết (Các khối linh hoạt):</label>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="addBlock('heading')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">+ Tiêu đề</button>
+                            <button type="button" onclick="addBlock('paragraph')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">+ Đoạn văn</button>
+                            <button type="button" onclick="addBlock('image')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">+ Hình ảnh</button>
+                        </div>
+                    </div>
+                    <div id="blocks-container" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200 min-h-[180px]"></div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeEditorModal()" class="px-5 py-2 rounded-xl border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-100 transition">Hủy</button>
+                <button onclick="savePost()" id="save-btn" class="bg-brand hover:bg-brand-dark text-white px-6 py-2 rounded-xl text-sm font-semibold transition shadow-md">Xuất bản bài viết</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://znbsawlfrthwhchfetgv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnNhd2xmcnRod2hjaGZldGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5ODc4NzgsImV4cCI6MjEwMzU2Mzg3OH0.CiPtEJt0b0fd0W4ERzTobJl2VH3aJ6JHgEkhYFmuSog';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentEditingId = null;
+
+        async function fetchAdminPosts() {
+            const container = document.getElementById('admin-posts-list');
+            const { data, error } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<p class="text-center text-red-500 py-6">Lỗi tải dữ liệu: ${error.message}</p>`;
+                return;
+            }
+
+            document.getElementById('post-count').innerText = `${data.length} bài viết`;
+            renderPostsTable(data || []);
+        }
+
+        function renderPostsTable(posts) {
+            const container = document.getElementById('admin-posts-list');
+            if (posts.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-400"><p class="text-sm">Chưa có bài viết nào trên hệ thống.</p></div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            posts.forEach(post => {
+                let dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString('vi-VN') : 'Vừa xong';
+                let coverImg = post.image || 'https://placehold.co/100x100/f3f4f6/9ca3af?text=VST';
+                let langBadge = post.lang === 'en' ? '<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700">EN</span>' : '<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">VN</span>';
+                
+                let cats = Array.isArray(post.category) ? post.category.join(', ') : (post.category || '');
+
+                const card = document.createElement('div');
+                card.className = "flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition";
+                card.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <img src="${coverImg}" class="w-16 h-16 object-cover rounded-lg border border-gray-100 flex-shrink-0" onerror="this.src='https://placehold.co/100x100'">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                ${langBadge}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700">${cats}</span>
+                                <span class="text-xs text-gray-400">${dateStr}</span>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-base line-clamp-1">${post.title}</h3>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick='openEditorModal(${JSON.stringify(post)})' class="bg-sky-50 text-sky-600 hover:bg-sky-100 px-3.5 py-2 rounded-lg text-xs font-semibold transition">Sửa</button>
+                        <button onclick="deletePost('${post.id}')" class="bg-red-50 text-red-600 hover:bg-red-100 px-3.5 py-2 rounded-lg text-xs font-semibold transition">Xóa</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openEditorModal(post = null) {
+            currentEditingId = post ? post.id : null;
+            document.getElementById('modal-title').innerText = post ? "Chỉnh sửa Bài Viết" : "Viết Bài Viết Mới";
+            document.getElementById('post-title').value = post ? post.title : '';
+            document.getElementById('post-lang').value = post ? (post.lang || 'vi') : 'vi';
+            document.getElementById('post-cover').value = post ? (post.image || '') : '';
+
+            // Reset checkboxes
+            let selectedCats = post ? (Array.isArray(post.category) ? post.category : [post.category]) : ['Cá nhân'];
+            document.querySelectorAll('input[name="post-cat"]').forEach(chk => {
+                chk.checked = selectedCats.includes(chk.value);
+            });
+
+            const container = document.getElementById('blocks-container');
+            container.innerHTML = '';
+
+            if (post && post.content_blocks) {
+                let blocks = typeof post.content_blocks === 'string' ? JSON.parse(post.content_blocks) : post.content_blocks;
+                blocks.forEach(b => addBlock(b.type, b.value));
+            } else if (post && post.content) {
+                addBlock('paragraph', post.content);
+            } else {
+                addBlock('heading', '');
+                addBlock('paragraph', '');
+            }
+
+            document.getElementById('editor-modal').classList.remove('hidden');
+        }
+
+        function closeEditorModal() {
+            document.getElementById('editor-modal').classList.add('hidden');
+        }
+
+       function addBlock(type, value = '') {
+            const container = document.getElementById('blocks-container');
+            const blockId = 'block-' + Math.random().toString(36).substring(2, 7);
+            
+            let label = type === 'heading' ? '📌 Tiêu đề phụ (Heading)' : (type === 'paragraph' ? '📝 Đoạn văn (Paragraph)' : '🖼️ Hình ảnh & Chú thích trong bài');
+            let inputHtml = '';
+
+            if (type === 'paragraph') {
+                inputHtml = `<textarea class="block-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white h-24 resize-y" data-type="${type}">${value}</textarea>`;
+            } else if (type === 'heading') {
+                inputHtml = `<input type="text" class="block-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold focus:ring-2 focus:ring-brand outline-none bg-white" data-type="${type}" value="${value}">`;
+            } else if (type === 'image') {
+                // Xử lý giá trị khi sửa bài cũ hoặc tạo mới (hỗ trợ cả dạng object {url, caption} hoặc string url cũ)
+                let imgUrl = typeof value === 'object' && value !== null ? (value.url || '') : (value || '');
+                let imgCap = typeof value === 'object' && value !== null ? (value.caption || '') : '';
+                
+                inputHtml = `
+                    <div class="space-y-2" data-type="image">
+                        <input type="url" class="block-input-url w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white" value="${imgUrl}" placeholder="Dán link ảnh https://...">
+                        <input type="text" class="block-input-cap w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-600 focus:ring-2 focus:ring-brand outline-none bg-gray-50" value="${imgCap}" placeholder="Nhập chú thích ảnh (caption)...">
+                    </div>
+                `;
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.id = blockId;
+            wrapper.className = "bg-white p-3 rounded-xl border border-gray-200 shadow-sm relative";
+            wrapper.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold text-gray-500">${label}</span>
+                    <button type="button" onclick="document.getElementById('${blockId}').remove()" class="text-red-400 hover:text-red-600 font-bold text-sm">&times;</button>
+                </div>
+                ${inputHtml}
+            `;
+            container.appendChild(wrapper);
+        }
+
+        async function savePost() {
+            const title = document.getElementById('post-title').value.trim();
+            const lang = document.getElementById('post-lang').value;
+            const cover = document.getElementById('post-cover').value.trim();
+
+            let categories = [];
+            document.querySelectorAll('input[name="post-cat"]:checked').forEach(chk => {
+                categories.push(chk.value);
+            });
+
+            if (!title) { alert("Vui lòng nhập tiêu đề bài viết!"); return; }
+            if (categories.length === 0) { alert("Vui lòng chọn ít nhất một đối tượng hướng tới!"); return; }
+
+            let blocks = [];
+            document.querySelectorAll('#blocks-container > div').forEach(div => {
+                const input = div.querySelector('.block-input');
+                const urlInput = div.querySelector('.block-input-url');
+                
+                if (input) {
+                    blocks.push({ type: input.getAttribute('data-type'), value: input.value.trim() });
+                } else if (urlInput) {
+                    blocks.push({ 
+                        type: 'image', 
+                        value: { 
+                            url: urlInput.value.trim(), 
+                            caption: div.querySelector('.block-input-cap').value.trim() 
+                        } 
+                    });
+                }
+            });
+
+            if (blocks.length === 0) { alert("Vui lòng thêm ít nhất một khối nội dung!"); return; }
+
+            let firstPara = blocks.find(b => b.type === 'paragraph');
+            let summary = firstPara ? firstPara.value : title;
+
+            const payload = { 
+                title, 
+                lang, 
+                category: categories, // Supabase kiểu jsonb hoặc text[] sẽ nhận mảng này chuẩn
+                image: cover || null, 
+                content: summary, 
+                content_blocks: blocks, 
+                updated_at: new Date() 
+            };
+
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Đang lưu...";
+
+            let res = currentEditingId ? await supabaseClient.from('posts').update(payload).eq('id', currentEditingId) : await supabaseClient.from('posts').insert([payload]);
+
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Xuất bản bài viết";
+
+            if (res.error) alert("Lỗi khi lưu: " + res.error.message);
+            else { alert("✨ Lưu thành công!"); closeEditorModal(); fetchAdminPosts(); }
+        }
+
+        async function deletePost(id) {
+            if (!confirm("Xóa vĩnh viễn bài viết này?")) return;
+            const { error } = await supabaseClient.from('posts').delete().eq('id', id);
+            if (error) alert("Lỗi xóa: " + error.message);
+            else { alert("🗑️ Đã xóa!"); fetchAdminPosts(); }
+        }
+
+        fetchAdminPosts();
+    </script>
+</body>
+</html>

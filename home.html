@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VST Builder - Sustainable Tourism Project</title>
+    <link rel="icon" href="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/icon%20VSTBuilder.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #16a34a; }
+        
+        .hero-pattern {
+            background-color: #064e3b;
+            background-image: linear-gradient(rgba(4, 47, 46, 0.7), rgba(4, 47, 46, 0.7)), url('https://images.unsplash.com/photo-1774286485314-94fb79d85b6f?q=80&w=1172&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .fade-bottom-edge {
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,1) 100%, transparent 100%);
+        }
+        #toast-container {
+            transition: all 0.3s ease;
+        }
+
+        .view-section.hidden {
+            display: none !important;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            light: '#dcfce7',
+                            DEFAULT: '#22c55e',
+                            dark: '#166534',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- NAVBAR -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="home.html" class="flex items-center">
+                        <img src="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/VST%20Builder%20Logo.png" alt="VST Builder Logo" class="h-8 w-auto">
+                    </a>
+                </div>
+                <!-- Menu Desktop -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#home"  data-i18n="nav_home" class="text-gray-600 hover:text-brand transition">Trang chủ</a>
+                    <a href="#about"  data-i18n="nav_about" class="text-gray-600 hover:text-brand transition">Về dự án</a>
+                    <a href="#founder"  data-i18n="nav_founder" class="text-gray-600 hover:text-brand transition">Founder</a>
+                    <a href="#news"  data-i18n="nav_news" class="text-gray-600 hover:text-brand transition">Bài viết</a>
+                    
+                    <!-- NÚT CHUYỂN NGÔN NGỮ VN | EN -->
+                    <div class="flex items-center bg-gray-100 p-1 rounded-full border border-gray-200">
+                        <button onclick="setLanguage('vi')" id="lang-btn-vi" class="px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition">VN</button>
+                        <button onclick="setLanguage('en')" id="lang-btn-en" class="px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition">EN</button>
+                    </div>
+
+                    <!-- Nút Mở Itinerary Builder sang Tab Mới -->
+                    <a href="itinerary_builder.html" target="_blank" class="bg-brand text-white px-4 py-2 rounded-full font-medium hover:bg-brand-dark transition shadow-md flex items-center gap-2 text-sm">
+                        <span data-i18n="nav_itinerary">Tạo Lịch Trình</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                    </a>
+                </div>
+                <!-- Mobile menu button -->
+                <div class="flex items-center md:hidden">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-brand focus:outline-none">
+                        <i class="fa-solid fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu panel -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 pb-4 shadow-lg absolute w-full z-40">
+            <!-- Nút chuyển ngôn ngữ cho Mobile -->
+            <div class="px-4 py-3 flex items-center gap-3 border-b border-gray-50 mb-2">
+                <div class="flex items-center bg-gray-100 p-1 rounded-full border border-gray-200">
+                    <button onclick="setLanguage('vi')" id="lang-btn-vi-mob" class="px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition">VN</button>
+                    <button onclick="setLanguage('en')" id="lang-btn-en-mob" class="px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition">EN</button>
+                </div>
+            </div>
+            
+            <a href="#home" data-i18n="nav_home" class="block px-4 py-2 text-gray-600 hover:bg-brand-light hover:text-brand-dark transition">Trang chủ</a>
+            <a href="#about" data-i18n="nav_about" class="block px-4 py-2 text-gray-600 hover:bg-brand-light hover:text-brand-dark transition">Về dự án</a>
+            <a href="#founder" data-i18n="nav_founder" class="block px-4 py-2 text-gray-600 hover:bg-brand-light hover:text-brand-dark transition">Founder</a>
+            <a href="#news" data-i18n="nav_news" class="block px-4 py-2 text-gray-600 hover:bg-brand-light hover:text-brand-dark transition">Bài viết</a>
+            <a href="m_itinerary_builder.html" target="_blank" class="block px-4 py-2 mt-2 text-brand font-semibold hover:bg-brand-light border-t border-gray-50">Tạo Lịch Trình (Tab mới)</a>
+        </div>
+    </nav>
+
+    <!-- VIEW: TRANG CHỦ -->
+    <div id="view-home" class="view-section block">
+        <section id="home" class="hero-pattern h-[600px] flex items-center justify-center text-center px-4 relative">
+            <div class="max-w-3xl z-10">
+                <span data-i18n="hero_badge" class="inline-block py-1 px-3 rounded-full bg-brand/20 text-brand-light backdrop-blur-sm border border-brand/30 text-sm font-semibold mb-4">
+                    Sáng kiến Phát triển Bền vững
+                </span>
+                <h1 data-i18n="hero_title" class="text-4xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                    Xây dựng Tương lai Bền vững cho Du Lịch Việt Nam
+                </h1>
+                <p data-i18n="hero_desc" class="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
+                    Kết nối cộng đồng làm du lịch và du khách quốc tế để kiến tạo những trải nghiệm nguyên bản. Cung cấp bộ công cụ vận hành xanh tinh gọn, giúp các doanh nghiệp vừa, nhỏ và siêu nhỏ (MSMEs) tối ưu hóa chi phí và phát triển bền vững.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#news" data-i18n="hero_btn_explore" class="bg-brand hover:bg-brand-dark text-white font-semibold py-3 px-8 rounded-full shadow-lg transition transform hover:-translate-y-1">
+                        Khám phá Sáng kiến Xanh
+                    </a>
+                    <a href="itinerary_builder.html" target="_blank" data-i18n="hero_btn_create" class="bg-white hover:bg-gray-100 text-brand-dark font-semibold py-3 px-8 rounded-full shadow-lg transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                        <span>Tạo Lịch Trình Ngay</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                    </a>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ABOUT SECTION -->
+        <section id="about" class="py-20 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 data-i18n="about_title" class="text-3xl font-bold text-gray-900 mb-4">Về VST Builder</h2>
+                    <div class="w-24 h-1 bg-brand mx-auto rounded-full"></div>
+                    <p data-i18n="about_desc" class="mt-4 text-gray-600 max-w-2xl mx-auto">Cung cấp kiến thức, câu chuyện và mạng lưới kết nối để gỡ bỏ rào cản chuyển đổi xanh trong ngành dịch vụ lưu trú và du lịch tại Việt Nam.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                        <div class="w-14 h-14 bg-brand-light text-brand rounded-full flex items-center justify-center text-2xl mb-6">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <h3 data-i18n="about_card1_title" class="text-xl font-bold mb-3">Dành cho Cá nhân</h3>
+                        <p data-i18n="about_card1_desc" class="text-gray-600">Đào tạo năng lực số, nâng cao kỹ năng nghề nghiệp, chủ động tạo sinh kế bền vững cho người dân bản địa.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                        <div class="w-14 h-14 bg-brand-light text-brand rounded-full flex items-center justify-center text-2xl mb-6">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <h3 data-i18n="about_card2_title" class="text-xl font-bold mb-3">Dành cho Tổ chức</h3>
+                        <p data-i18n="about_card2_desc" class="text-gray-600">Đập tan lầm tưởng "chuyển đổi xanh là tốn kém". Chia sẻ câu chuyện, bài học và sáng kiến chuyển đổi xanh. Hướng tới xây dựng hệ thống vận hành xanh tinh gọn cho MSMEs.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                        <div class="w-14 h-14 bg-brand-light text-brand rounded-full flex items-center justify-center text-2xl mb-6">
+                            <i class="fa-solid fa-suitcase-rolling"></i>
+                        </div>
+                        <h3 data-i18n="about_card3_title" class="text-xl font-bold mb-3">Dành cho Khách Du Lịch</h3>
+                        <p data-i18n="about_card3_desc" class="text-gray-600">Trạm thông tin tin cậy cung cấp các lịch trình thiết kế riêng biệt. Kết nối bạn trực tiếp với người dân bản địa để trải nghiệm văn hóa nguyên bản và thực hành du lịch có trách nhiệm.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOUNDER SECTION -->
+        <section id="founder" class="py-20 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row items-center gap-12">
+                    <!-- Chỉnh khung ảnh chiếm 1/3 (md:w-1/3) và ép tỷ lệ dọc (aspect-[3/4]) -->
+                    <div class="md:w-1/3 relative max-w-sm mx-auto md:mx-0">
+                        <div class="absolute inset-0 bg-brand rounded-2xl transform translate-x-4 translate-y-4 opacity-20"></div>
+                        <img src="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/anhFounder.png" alt="Founder of VST Builder" class="rounded-2xl shadow-lg relative z-10 w-full object-cover aspect-[3/4]">
+                    </div>
+                    <!-- Chỉnh khung chữ rộng ra chiếm 2/3 (md:w-2/3) -->
+                    <div class="md:w-2/3">
+                        <h2 data-i18n="founder_subtitle" class="text-sm font-bold text-brand uppercase tracking-wider mb-2">Lời ngỏ từ Founder</h2>
+                        <h3 data-i18n="founder_quote" class="text-3xl font-bold text-gray-900 mb-6">"Du lịch không chỉ là hành trình khám phá, mà là cơ hội để tôn vinh văn hóa bản địa và bảo vệ giá trị bền vững của cộng đồng."</h3>
+                        <p data-i18n="founder_desc" class="text-gray-600 mb-6 text-lg leading-relaxed">
+                            Từ kinh nghiệm quản lý trực tiếp khách sạn SME và quá trình đào tạo nhân sự du lịch địa phương tại Sapa, tôi nhận ra rào cản lớn nhất của phát triển bền vững không nằm ở công nghệ, mà là sự thiếu hụt một bộ công cụ vận hành tinh gọn, phù hợp với dòng tiền hạn hẹp của các doanh nghiệp nhỏ, cũng như thiếu năng lực và nhận thức về phát triển bền vững của nhân sự trong ngành. VST Builder ra đời để giải quyết nút thắt đó. Chúng tôi không chỉ cung cấp lịch trình miễn phí cho hàng chục du khách quốc tế mỗi tháng, mà còn đồng hành cùng các chủ cơ sở lưu trú tối ưu hóa chi phí năng lượng, giảm thiểu rác thải nhựa và xây dựng văn hóa dịch vụ văn minh, bền vững.
+                        </p>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-1 bg-brand rounded-full"></div>
+                            <span class="font-semibold text-gray-900">Founder Phong Nguyen</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEWS SECTION (Dữ liệu kéo từ Supabase) -->
+        <section id="news" class="py-20 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+                    <div>
+                        <h2 data-i18n="news_title" class="text-3xl font-bold text-gray-900 mb-4">Bài viết về Du lịch Bền vững</h2>
+                        <div class="w-24 h-1 bg-brand rounded-full"></div>
+                    </div>
+                    <!-- Filter UI -->
+                    <div class="flex flex-wrap gap-2" id="filter-container">
+                        <button onclick="filterPosts('Tất cả', this)" data-i18n="filter_all" class="filter-btn px-4 py-2 rounded-full bg-brand text-white text-sm font-medium shadow-sm transition">Tất cả</button>
+                        <button onclick="filterPosts('Cá nhân', this)" data-i18n="filter_personal" class="filter-btn px-4 py-2 rounded-full bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 text-sm font-medium transition">Cá nhân</button>
+                        <button onclick="filterPosts('Tổ chức', this)" data-i18n="filter_org" class="filter-btn px-4 py-2 rounded-full bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 text-sm font-medium transition">Tổ chức</button>
+                        <button onclick="filterPosts('Khách du lịch', this)" data-i18n="filter_traveler" class="filter-btn px-4 py-2 rounded-full bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 text-sm font-medium transition">Khách du lịch</button>
+                    </div>
+                </div>
+
+                <!-- Bài viết được render từ Supabase -->
+                <div id="posts-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="col-span-full text-center py-12 text-gray-500">
+                        <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-brand"></i>
+                        <p>Đang tải bài viết từ Supabase...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-gray-300 py-12 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <a href="#" class="inline-block mb-4">
+                    <img src="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/VST%20Builder%20Logo.png" alt="VST Builder Logo" class="h-12 w-auto brightness-0 invert">
+                </a>
+                <p data-i18n="footer_desc" class="text-sm text-gray-400 max-w-xs">Đồng hành cùng bạn xây dựng tương lai du lịch xanh, thân thiện và phát triển bền vững tại Việt Nam.</p>
+            </div>
+            <div>
+                <h4 data-i18n="footer_quicklinks" class="text-white font-semibold mb-4">Liên kết nhanh</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="#home"  data-i18n="nav_home" class="hover:text-brand transition">Trang chủ</a></li>
+                    <li><a href="#news"  data-i18n="nav_news" class="hover:text-brand transition">Tips Bền Vững</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 data-i18n="footer_connect" class="text-white font-semibold mb-4">Kết nối</h4>
+                <div class="flex gap-4">
+                    <a href="https://www.facebook.com/vietnam.solotrip" target="_blank" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-brand hover:text-white transition" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/vietnam.solotrip/" target="_blank" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-brand hover:text-white transition" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.linkedin.com/company/vst-builder/" target="_blank" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-brand hover:text-white transition" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="mailto:vstbuilder.info@gmail.com" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-brand hover:text-white transition" title="Email"><i class="fa-regular fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
+            &copy; 2026 VST Builder. All rights reserved.
+        </div>
+
+        <!-- MODAL XEM CHI TIẾT BÀI VIẾT -->
+        <div id="post-detail-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex justify-center items-center p-4">
+            <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                    <h3 id="modal-post-title" class="font-bold text-lg text-gray-900">Chi tiết bài viết</h3>
+                    <button onclick="closePostModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+                </div>
+                <div id="modal-post-content" class="p-6 overflow-y-auto space-y-4 flex-grow">
+                    <!-- Nội dung các blocks render ở đây -->
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPT XỬ LÝ ĐA NGÔN NGỮ VÀ SUPABASE -->
+    <script>
+        const SUPABASE_URL = 'https://znbsawlfrthwhchfetgv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnNhd2xmcnRod2hjaGZldGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5ODc4NzgsImV4cCI6MjEwMzU2Mzg3OH0.CiPtEJt0b0fd0W4ERzTobJl2VH3aJ6JHgEkhYFmuSog';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentLang = 'vi';
+        let allPostsCache = [];
+        let currentFilter = 'Tất cả';
+
+        const i18nData = {
+            vi: {
+                nav_home: "Trang chủ", nav_about: "Về dự án", nav_founder: "Founder", nav_news: "Bài viết", nav_itinerary: "Tạo Lịch Trình",
+                hero_badge: "Sáng kiến Phát triển Bền vững", hero_title: "Xây dựng Tương lai Bền vững cho Du Lịch Việt Nam", hero_desc: "Kết nối cộng đồng làm du lịch và du khách quốc tế để kiến tạo những trải nghiệm nguyên bản. Cung cấp bộ công cụ vận hành xanh tinh gọn, giúp các doanh nghiệp vừa, nhỏ và siêu nhỏ (MSMEs) tối ưu hóa chi phí và phát triển bền vững.",
+                hero_btn_explore: "Khám phá Sáng kiến Xanh", hero_btn_create: "Tạo Lịch Trình Ngay",
+                about_title: "Về VST Builder", about_desc: "Cung cấp kiến thức, câu chuyện và mạng lưới kết nối để gỡ bỏ rào cản chuyển đổi xanh trong ngành dịch vụ lưu trú và du lịch tại Việt Nam.",
+                about_card1_title: "Dành cho Cá nhân", about_card1_desc: "Đào tạo năng lực số, nâng cao kỹ năng nghề nghiệp, chủ động tạo sinh kế bền vững cho người dân bản địa.",
+                about_card2_title: "Dành cho Tổ chức", about_card2_desc: "Đập tan lầm tưởng \"chuyển đổi xanh là tốn kém\". Chia sẻ câu chuyện, bài học và sáng kiến chuyển đổi xanh. Hướng tới xây dựng hệ thống vận hành xanh tinh gọn cho MSMEs.",
+                about_card3_title: "Dành cho Khách Du Lịch", about_card3_desc: "Trạm thông tin tin cậy cung cấp các lịch trình thiết kế riêng biệt. Kết nối bạn trực tiếp với người dân bản địa để trải nghiệm văn hóa nguyên bản và thực hành du lịch có trách nhiệm.",
+                founder_subtitle: "Lời ngỏ từ Founder", founder_quote: "\"Du lịch không chỉ là hành trình khám phá, mà là cơ hội để tôn vinh văn hóa bản địa và bảo vệ giá trị bền vững của cộng đồng.\"", founder_desc: "Từ kinh nghiệm quản lý trực tiếp khách sạn SME và quá trình đào tạo nhân sự du lịch địa phương tại Sapa, tôi nhận ra rào cản lớn nhất của phát triển bền vững không nằm ở công nghệ, mà là sự thiếu hụt một bộ công cụ vận hành tinh gọn, phù hợp với dòng tiền hạn hẹp của các doanh nghiệp nhỏ, cũng như thiếu năng lực và nhận thức về phát triển bền vững của nhân sự trong ngành. VST Builder ra đời để giải quyết nút thắt đó. Chúng tôi không chỉ cung cấp lịch trình miễn phí cho hàng chục du khách quốc tế mỗi tháng, mà còn đồng hành cùng các chủ cơ sở lưu trú tối ưu hóa chi phí năng lượng, giảm thiểu rác thải nhựa và xây dựng văn hóa dịch vụ văn minh, bền vững.",
+                news_title: "Bài viết về Du lịch Bền vững", filter_all: "Tất cả", filter_personal: "Cá nhân", filter_org: "Tổ chức", filter_traveler: "Khách du lịch",
+                footer_desc: "Đồng hành cùng bạn xây dựng tương lai du lịch xanh, thân thiện và phát triển bền vững tại Việt Nam.", footer_quicklinks: "Liên kết nhanh", footer_connect: "Kết nối"
+            },
+            en: {
+                nav_home: "Home", nav_about: "About", nav_founder: "Founder", nav_news: "News", nav_itinerary: "Build Itinerary",
+                hero_badge: "Sustainable Development Initiative", hero_title: "Building a Sustainable Future for Vietnam's Tourism", hero_desc: "Connecting the tourism community and international travelers to create authentic experiences. Providing a lean green operational toolkit to help micro, small, and medium enterprises (MSMEs) optimize costs and grow sustainably.",
+                hero_btn_explore: "Explore Green Initiatives", hero_btn_create: "Build Itinerary Now",
+                about_title: "About VST Builder", about_desc: "Providing knowledge, stories, and a network to remove barriers to green transition in the accommodation and tourism sectors in Vietnam.",
+                about_card1_title: "For Individuals", about_card1_desc: "Develop digital capabilities, enhance vocational skills, and proactively create sustainable livelihoods for indigenous people.",
+                about_card2_title: "For Organizations", about_card2_desc: "Shattering the myth that \"going green is expensive\". Sharing stories, lessons, and green transition initiatives. Aiming to build a lean green operational system for MSMEs.",
+                about_card3_title: "For Travelers", about_card3_desc: "A reliable information hub providing customized itineraries. Connecting you directly with locals for authentic cultural experiences and responsible travel practices.",
+                founder_subtitle: "A Note from Founder", founder_quote: "\"Tourism is not just a journey of discovery, but an opportunity to celebrate local culture and protect the sustainable values of the community.\"", founder_desc: "From my experience directly managing SME hotels and training local tourism personnel in Sapa, I realized that the biggest barrier to sustainable development is not technology, but the lack of a lean operational toolkit suitable for the tight cash flows of small businesses, alongside a lack of awareness and capacity regarding sustainability among industry personnel. VST Builder was born to solve that bottleneck. We not only provide free itineraries for dozens of international tourists every month, but also accompany accommodation owners to optimize energy costs, minimize plastic waste, and build a civilized and sustainable service culture.",
+                news_title: "Sustainable Tourism News", filter_all: "All", filter_personal: "Personal", filter_org: "Organization", filter_traveler: "Traveler",
+                footer_desc: "Accompanying you to build a green, friendly, and sustainable tourism future in Vietnam.", footer_quicklinks: "Quick Links", footer_connect: "Connect"
+            }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            
+            // Đổi màu nút trên Desktop
+            document.getElementById('lang-btn-vi').className = lang === 'vi' ? 'px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition' : 'px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition';
+            document.getElementById('lang-btn-en').className = lang === 'en' ? 'px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition' : 'px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition';
+
+            // Đổi màu nút trên Mobile
+            let btnViMob = document.getElementById('lang-btn-vi-mob');
+            let btnEnMob = document.getElementById('lang-btn-en-mob');
+            if (btnViMob && btnEnMob) {
+                btnViMob.className = lang === 'vi' ? 'px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition' : 'px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition';
+                btnEnMob.className = lang === 'en' ? 'px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition' : 'px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition';
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18nData[lang][key]) el.innerText = i18nData[lang][key];
+            });
+
+            renderFilteredPosts();
+        }
+
+        async function fetchHomePosts() {
+            const { data, error } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+            if (!error && data) {
+                allPostsCache = data;
+                renderFilteredPosts();
+            }
+        }
+
+        window.filterPosts = function(category, btnElement) {
+            currentFilter = category;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn px-4 py-2 rounded-full bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 text-sm font-medium transition";
+            });
+            btnElement.className = "filter-btn px-4 py-2 rounded-full bg-brand text-white text-sm font-medium shadow-sm transition";
+            renderFilteredPosts();
+        };
+
+        function renderFilteredPosts() {
+            const container = document.getElementById('posts-container');
+            let filtered = allPostsCache.filter(p => (p.lang || 'vi') === currentLang);
+            
+            // Xử lý lọc chuẩn cho cả trường hợp category là mảng hoặc chuỗi cũ
+            if (currentFilter !== 'Tất cả' && currentFilter !== 'All') {
+                filtered = filtered.filter(p => {
+                    let cats = Array.isArray(p.category) ? p.category : (typeof p.category === 'string' ? JSON.parse(p.category || '[]') : [p.category]);
+                    return cats.includes(currentFilter);
+                });
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400"><p>${currentLang === 'vi' ? 'Chưa có bài viết nào.' : 'No posts available.'}</p></div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(post => {
+                let cover = post.image || 'https://placehold.co/600x400/f3f4f6/9ca3af?text=VST';
+                let dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString(currentLang === 'vi' ? 'vi-VN' : 'en-US') : '';
+                
+                // Ép kiểu category về mảng để hiển thị dấu phẩy ngăn cách gọn gàng
+                let catsArray = Array.isArray(post.category) ? post.category : (typeof post.category === 'string' ? JSON.parse(post.category || '[]') : [post.category]);
+                let catsDisplay = catsArray.join(', ');
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-lg transition cursor-pointer group";
+                card.onclick = () => {
+                    window.location.href = 'post.html?id=' + post.id;
+                };
+                card.innerHTML = `
+                    <div class="h-56 overflow-hidden relative">
+                        <img src="${cover}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4 right-4 flex flex-col gap-2">
+                            <h3 class="text-white text-xl font-bold line-clamp-2 drop-shadow-md">${post.title}</h3>
+                            <div class="flex items-center gap-3 text-xs text-gray-200">
+                                <span class="px-2.5 py-1 rounded-full font-bold bg-brand text-white border border-brand-light/30">${catsDisplay}</span>
+                                <span><i class="fa-regular fa-calendar mr-1"></i>${dateStr}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <p class="text-gray-600 text-sm mb-6 flex-grow line-clamp-3">${post.content || ''}</p>
+                        <span class="text-brand font-semibold text-sm flex items-center gap-1 mt-auto cursor-pointer">
+                            ${currentLang === 'vi' ? 'Đọc bài viết' : 'Read more'} <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        fetchHomePosts();
+
+        // Mở Modal xem chi tiết bài viết đầy đủ các khối
+        function openPostModal(post) {
+            document.getElementById('modal-post-title').innerText = currentLang === 'vi' ? 'Chi tiết bài viết' : 'Post Details';
+            const contentContainer = document.getElementById('modal-post-content');
+            
+            let cover = post.image || 'https://placehold.co/800x400/f3f4f6/9ca3af?text=VST';
+            let dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString(currentLang === 'vi' ? 'vi-VN' : 'en-US') : '';
+            let catsArray = Array.isArray(post.category) ? post.category : (typeof post.category === 'string' ? JSON.parse(post.category || '[]') : [post.category]);
+            let catsDisplay = catsArray.join(', ');
+
+            // Cấu trúc ảnh cover tràn viền (dùng margin âm -mx-6 -mt-6 để phá khung padding)
+            contentContainer.innerHTML = `
+                <div class="-mx-6 -mt-6 mb-6 relative h-[350px] overflow-hidden">
+                    <img src="${cover}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+                    <div class="absolute bottom-6 left-6 right-6 flex flex-col gap-3">
+                        <h1 class="text-white text-2xl md:text-3xl font-bold leading-snug drop-shadow-md">${post.title}</h1>
+                        <div class="flex items-center gap-3 text-xs text-gray-200">
+                            <span class="px-2.5 py-1 rounded-full font-bold bg-brand text-white border border-brand-light/30">${catsDisplay}</span>
+                            <span><i class="fa-regular fa-calendar mr-1"></i>${dateStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (post.content_blocks) {
+                let blocks = typeof post.content_blocks === 'string' ? JSON.parse(post.content_blocks) : post.content_blocks;
+                blocks.forEach(b => {
+                    let el = document.createElement('div');
+                    if (b.type === 'heading') {
+                        el.innerHTML = `<h4 class="text-xl font-bold text-gray-900 mt-6 mb-3">${b.value}</h4>`;
+                    } else if (b.type === 'paragraph') {
+                        el.innerHTML = `<p class="text-gray-700 text-[15px] leading-relaxed mb-4">${b.value}</p>`;
+                    } else if (b.type === 'image') {
+                        let imgUrl = typeof b.value === 'object' ? b.value.url : b.value;
+                        let imgCap = typeof b.value === 'object' ? b.value.caption : 'Ảnh minh họa';
+                        el.innerHTML = `<div class="my-6"><img src="${imgUrl}" class="w-full rounded-xl shadow max-h-[450px] object-cover"><p class="text-xs text-center text-gray-500 mt-2 italic">${imgCap}</p></div>`;
+                    }
+                    contentContainer.appendChild(el);
+                });
+            } else {
+                contentContainer.innerHTML += `<p class="text-gray-700 text-[15px]">${post.content}</p>`;
+            }
+
+            document.getElementById('post-detail-modal').classList.remove('hidden');
+        }
+        
+        function closePostModal() {
+            document.getElementById('post-detail-modal').classList.add('hidden');
+        }
+
+        // Xử lý bật/tắt menu trên mobile
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Tự động đóng menu khi bấm vào một link bất kỳ bên trong
+            const mobileLinks = mobileMenu.querySelectorAll('a');
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+        }
+    </script>
+</body>
+</html>

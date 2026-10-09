@@ -1,6 +1,6 @@
 {
   "cleanUrls": true,
   "redirects": [
-    { "source": "/", "destination": "/itinerary_builder", "permanent": false }
+    { "source": "/", "destination": "/home", "permanent": false }
   ]
 }

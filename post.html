@@ -104,7 +104,8 @@
                     if (b.type === 'heading') {
                         el.innerHTML = `<h2 class="text-2xl font-bold text-gray-900 mt-8 mb-3">${b.value}</h2>`;
                     } else if (b.type === 'paragraph') {
-                        el.innerHTML = `<p class="mb-4">${b.value}</p>`;
+                        // Thêm whitespace-pre-line vào đây
+                        el.innerHTML = `<p class="mb-4 whitespace-pre-line">${b.value}</p>`;
                     } else if (b.type === 'image') {
                         let imgUrl = typeof b.value === 'object' ? b.value.url : b.value;
                         let imgCap = typeof b.value === 'object' ? b.value.caption : 'Ảnh minh họa';
@@ -113,7 +114,8 @@
                     blocksContainer.appendChild(el);
                 });
             } else {
-                blocksContainer.innerHTML = `<p>${data.content}</p>`;
+                // Thêm whitespace-pre-line vào cả phần này nữa
+                blocksContainer.innerHTML = `<p class="whitespace-pre-line">${data.content}</p>`;
             }
         }
 

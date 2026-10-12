@@ -75,13 +75,22 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="md:col-span-2">
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tiêu đề bài viết <span class="text-red-500">*</span></label>
-                        <input type="text" id="post-title" placeholder="Nhập tiêu đề hấp dẫn..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm">
+                        <!-- Tiêu đề chế độ 1 ngôn ngữ -->
+                        <div id="single-title-wrapper">
+                            <input type="text" id="post-title" placeholder="Nhập tiêu đề hấp dẫn..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm">
+                        </div>
+                        <!-- Tiêu đề chế độ Song ngữ (ẩn mặc định) -->
+                        <div id="bilingual-title-wrapper" class="hidden grid grid-cols-2 gap-4">
+                            <input type="text" id="post-title-vi" placeholder="🇻🇳 Tiêu đề (Tiếng Việt)..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm border-l-4 border-green-500">
+                            <input type="text" id="post-title-en" placeholder="🇬🇧 Title (English)..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm border-l-4 border-blue-500">
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Ngôn ngữ <span class="text-red-500">*</span></label>
-                        <select id="post-lang" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm bg-white font-bold text-brand-dark">
+                        <select id="post-lang" onchange="toggleBilingualMode()" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand outline-none text-sm bg-white font-bold text-brand-dark">
                             <option value="vi">Tiếng Việt (VN)</option>
                             <option value="en">English (EN)</option>
+                            <option value="both">Song ngữ (Viết 1 lần lưu 2 bài)</option>
                         </select>
                     </div>
                 </div>
@@ -186,18 +195,44 @@
             });
         }
 
+        let isBilingual = false;
+
+        function toggleBilingualMode(forceClear = true) {
+            const lang = document.getElementById('post-lang').value;
+            isBilingual = (lang === 'both');
+            
+            if (isBilingual) {
+                document.getElementById('single-title-wrapper').classList.add('hidden');
+                document.getElementById('bilingual-title-wrapper').classList.remove('hidden');
+            } else {
+                document.getElementById('single-title-wrapper').classList.remove('hidden');
+                document.getElementById('bilingual-title-wrapper').classList.add('hidden');
+            }
+            if (forceClear) document.getElementById('blocks-container').innerHTML = '';
+        }
+
         function openEditorModal(post = null) {
             currentEditingId = post ? post.id : null;
             document.getElementById('modal-title').innerText = post ? "Chỉnh sửa Bài Viết" : "Viết Bài Viết Mới";
-            document.getElementById('post-title').value = post ? post.title : '';
-            document.getElementById('post-lang').value = post ? (post.lang || 'vi') : 'vi';
+            
+            const langSelect = document.getElementById('post-lang');
+            if (post) {
+                langSelect.value = post.lang || 'vi';
+                langSelect.querySelector('option[value="both"]').disabled = true;
+                document.getElementById('post-title').value = post.title;
+            } else {
+                langSelect.value = 'vi';
+                langSelect.querySelector('option[value="both"]').disabled = false;
+                document.getElementById('post-title').value = '';
+                document.getElementById('post-title-vi').value = '';
+                document.getElementById('post-title-en').value = '';
+            }
+            
+            toggleBilingualMode(false);
             document.getElementById('post-cover').value = post ? (post.image || '') : '';
 
-            // Reset checkboxes
             let selectedCats = post ? (Array.isArray(post.category) ? post.category : [post.category]) : ['Cá nhân'];
-            document.querySelectorAll('input[name="post-cat"]').forEach(chk => {
-                chk.checked = selectedCats.includes(chk.value);
-            });
+            document.querySelectorAll('input[name="post-cat"]').forEach(chk => { chk.checked = selectedCats.includes(chk.value); });
 
             const container = document.getElementById('blocks-container');
             container.innerHTML = '';
@@ -219,28 +254,54 @@
             document.getElementById('editor-modal').classList.add('hidden');
         }
 
-       function addBlock(type, value = '') {
+function addBlock(type, value = '') {
             const container = document.getElementById('blocks-container');
             const blockId = 'block-' + Math.random().toString(36).substring(2, 7);
             
-            let label = type === 'heading' ? '📌 Tiêu đề phụ (Heading)' : (type === 'paragraph' ? '📝 Đoạn văn (Paragraph)' : '🖼️ Hình ảnh & Chú thích trong bài');
+            let label = type === 'heading' ? '📌 Tiêu đề phụ (Heading)' : (type === 'paragraph' ? '📝 Đoạn văn (Paragraph)' : '🖼️ Hình ảnh & Chú thích');
             let inputHtml = '';
 
-            if (type === 'paragraph') {
-                inputHtml = `<textarea class="block-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white h-24 resize-y" data-type="${type}">${value}</textarea>`;
-            } else if (type === 'heading') {
-                inputHtml = `<input type="text" class="block-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold focus:ring-2 focus:ring-brand outline-none bg-white" data-type="${type}" value="${value}">`;
-            } else if (type === 'image') {
-                // Xử lý giá trị khi sửa bài cũ hoặc tạo mới (hỗ trợ cả dạng object {url, caption} hoặc string url cũ)
-                let imgUrl = typeof value === 'object' && value !== null ? (value.url || '') : (value || '');
-                let imgCap = typeof value === 'object' && value !== null ? (value.caption || '') : '';
-                
-                inputHtml = `
-                    <div class="space-y-2" data-type="image">
-                        <input type="url" class="block-input-url w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white" value="${imgUrl}" placeholder="Dán link ảnh https://...">
-                        <input type="text" class="block-input-cap w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-600 focus:ring-2 focus:ring-brand outline-none bg-gray-50" value="${imgCap}" placeholder="Nhập chú thích ảnh (caption)...">
-                    </div>
-                `;
+            if (!isBilingual) {
+                if (type === 'paragraph') {
+                    inputHtml = `<textarea class="block-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white h-24 resize-y" data-type="${type}">${value}</textarea>`;
+                } else if (type === 'heading') {
+                    inputHtml = `<input type="text" class="block-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-bold focus:ring-2 focus:ring-brand outline-none bg-white" data-type="${type}" value="${value}">`;
+                } else if (type === 'image') {
+                    let imgUrl = typeof value === 'object' && value !== null ? (value.url || '') : (value || '');
+                    let imgCap = typeof value === 'object' && value !== null ? (value.caption || '') : '';
+                    inputHtml = `
+                        <div class="space-y-2" data-type="image">
+                            <input type="url" class="block-input-url w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white" value="${imgUrl}" placeholder="Dán link ảnh https://...">
+                            <input type="text" class="block-input-cap w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-600 focus:ring-2 focus:ring-brand outline-none bg-gray-50" value="${imgCap}" placeholder="Nhập chú thích ảnh (caption)...">
+                        </div>
+                    `;
+                }
+            } else {
+                if (type === 'paragraph') {
+                    inputHtml = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-type="paragraph">
+                            <textarea class="block-input-vi w-full px-3 py-2 border-l-4 border-green-500 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white h-24 resize-y" placeholder="🇻🇳 Nội dung tiếng Việt..."></textarea>
+                            <textarea class="block-input-en w-full px-3 py-2 border-l-4 border-blue-500 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white h-24 resize-y" placeholder="🇬🇧 English content..."></textarea>
+                        </div>
+                    `;
+                } else if (type === 'heading') {
+                    inputHtml = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-type="heading">
+                            <input type="text" class="block-input-vi w-full px-3 py-2 border-l-4 border-green-500 border-gray-300 rounded-lg text-sm font-bold focus:ring-2 focus:ring-brand outline-none bg-white" placeholder="🇻🇳 Tiêu đề phụ VN">
+                            <input type="text" class="block-input-en w-full px-3 py-2 border-l-4 border-blue-500 border-gray-300 rounded-lg text-sm font-bold focus:ring-2 focus:ring-brand outline-none bg-white" placeholder="🇬🇧 Heading EN">
+                        </div>
+                    `;
+                } else if (type === 'image') {
+                    inputHtml = `
+                        <div class="space-y-2" data-type="image">
+                            <input type="url" class="block-input-url w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white" placeholder="Dán link ảnh dùng chung (https://...)">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input type="text" class="block-input-cap-vi w-full px-3 py-2 border-l-4 border-green-500 border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-brand outline-none bg-gray-50" placeholder="🇻🇳 Chú thích ảnh (VN)">
+                                <input type="text" class="block-input-cap-en w-full px-3 py-2 border-l-4 border-blue-500 border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-brand outline-none bg-gray-50" placeholder="🇬🇧 Image caption (EN)">
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
             const wrapper = document.createElement('div');
@@ -255,58 +316,73 @@
             `;
             container.appendChild(wrapper);
         }
-
-        async function savePost() {
-            const title = document.getElementById('post-title').value.trim();
+       async function savePost() {
             const lang = document.getElementById('post-lang').value;
             const cover = document.getElementById('post-cover').value.trim();
-
             let categories = [];
-            document.querySelectorAll('input[name="post-cat"]:checked').forEach(chk => {
-                categories.push(chk.value);
-            });
+            document.querySelectorAll('input[name="post-cat"]:checked').forEach(chk => { categories.push(chk.value); });
 
-            if (!title) { alert("Vui lòng nhập tiêu đề bài viết!"); return; }
             if (categories.length === 0) { alert("Vui lòng chọn ít nhất một đối tượng hướng tới!"); return; }
 
-            let blocks = [];
-            document.querySelectorAll('#blocks-container > div').forEach(div => {
-                const input = div.querySelector('.block-input');
-                const urlInput = div.querySelector('.block-input-url');
+            let payloads = []; 
+
+            if (!isBilingual) {
+                const title = document.getElementById('post-title').value.trim();
+                if (!title) { alert("Vui lòng nhập tiêu đề bài viết!"); return; }
+
+                let blocks = [];
+                document.querySelectorAll('#blocks-container > div').forEach(div => {
+                    const input = div.querySelector('.block-input');
+                    const urlInput = div.querySelector('.block-input-url');
+                    
+                    if (input) {
+                        blocks.push({ type: input.getAttribute('data-type'), value: input.value.trim() });
+                    } else if (urlInput) {
+                        blocks.push({ type: 'image', value: { url: urlInput.value.trim(), caption: div.querySelector('.block-input-cap').value.trim() } });
+                    }
+                });
+
+                if (blocks.length === 0) { alert("Vui lòng thêm ít nhất một khối nội dung!"); return; }
+                let firstPara = blocks.find(b => b.type === 'paragraph');
                 
-                if (input) {
-                    blocks.push({ type: input.getAttribute('data-type'), value: input.value.trim() });
-                } else if (urlInput) {
-                    blocks.push({ 
-                        type: 'image', 
-                        value: { 
-                            url: urlInput.value.trim(), 
-                            caption: div.querySelector('.block-input-cap').value.trim() 
-                        } 
-                    });
-                }
-            });
+                payloads.push({ title, lang, category: categories, image: cover || null, content: firstPara ? firstPara.value : title, content_blocks: blocks, updated_at: new Date() });
+            } else {
+                const titleVi = document.getElementById('post-title-vi').value.trim();
+                const titleEn = document.getElementById('post-title-en').value.trim();
+                if (!titleVi || !titleEn) { alert("Vui lòng nhập đủ 2 tiêu đề VN và EN!"); return; }
 
-            if (blocks.length === 0) { alert("Vui lòng thêm ít nhất một khối nội dung!"); return; }
+                let blocksVi = [];
+                let blocksEn = [];
+                document.querySelectorAll('#blocks-container > div').forEach(div => {
+                    const typeWrapper = div.querySelector('div[data-type]');
+                    if (!typeWrapper) return;
+                    const type = typeWrapper.getAttribute('data-type');
+                    
+                    if (type === 'heading' || type === 'paragraph') {
+                        blocksVi.push({ type: type, value: div.querySelector('.block-input-vi').value.trim() });
+                        blocksEn.push({ type: type, value: div.querySelector('.block-input-en').value.trim() });
+                    } else if (type === 'image') {
+                        const url = div.querySelector('.block-input-url').value.trim();
+                        blocksVi.push({ type: 'image', value: { url: url, caption: div.querySelector('.block-input-cap-vi').value.trim() } });
+                        blocksEn.push({ type: 'image', value: { url: url, caption: div.querySelector('.block-input-cap-en').value.trim() } });
+                    }
+                });
 
-            let firstPara = blocks.find(b => b.type === 'paragraph');
-            let summary = firstPara ? firstPara.value : title;
+                if (blocksVi.length === 0) { alert("Vui lòng thêm ít nhất một khối nội dung!"); return; }
+                let firstParaVi = blocksVi.find(b => b.type === 'paragraph');
+                let firstParaEn = blocksEn.find(b => b.type === 'paragraph');
 
-            const payload = { 
-                title, 
-                lang, 
-                category: categories, // Supabase kiểu jsonb hoặc text[] sẽ nhận mảng này chuẩn
-                image: cover || null, 
-                content: summary, 
-                content_blocks: blocks, 
-                updated_at: new Date() 
-            };
+                payloads.push({ title: titleVi, lang: 'vi', category: categories, image: cover || null, content: firstParaVi ? firstParaVi.value : titleVi, content_blocks: blocksVi, updated_at: new Date() });
+                payloads.push({ title: titleEn, lang: 'en', category: categories, image: cover || null, content: firstParaEn ? firstParaEn.value : titleEn, content_blocks: blocksEn, updated_at: new Date() });
+            }
 
             const saveBtn = document.getElementById('save-btn');
             saveBtn.disabled = true;
             saveBtn.innerText = "Đang lưu...";
 
-            let res = currentEditingId ? await supabaseClient.from('posts').update(payload).eq('id', currentEditingId) : await supabaseClient.from('posts').insert([payload]);
+            let res = currentEditingId && !isBilingual 
+                ? await supabaseClient.from('posts').update(payloads[0]).eq('id', currentEditingId) 
+                : await supabaseClient.from('posts').insert(payloads);
 
             saveBtn.disabled = false;
             saveBtn.innerText = "Xuất bản bài viết";
@@ -314,7 +390,7 @@
             if (res.error) alert("Lỗi khi lưu: " + res.error.message);
             else { alert("✨ Lưu thành công!"); closeEditorModal(); fetchAdminPosts(); }
         }
-
+        
         async function deletePost(id) {
             if (!confirm("Xóa vĩnh viễn bài viết này?")) return;
             const { error } = await supabaseClient.from('posts').delete().eq('id', id);

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VST Builder - Sustainable Tourism Project</title>
+    <link rel="icon" href="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/icon%20VSTBuilder.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: { DEFAULT: '#22c55e', dark: '#166534' } } } }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Navbar nhỏ gọn -->
+    <header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <a href="home.html" class="flex items-center">
+            <img src="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/VST%20Builder%20Logo.png" alt="VST Builder Logo" class="h-10 w-auto">
+        </a>
+        <a href="home.html" class="text-sm text-gray-600 hover:text-brand transition flex items-center gap-1 font-medium">
+            <i class="fa-solid fa-arrow-left"></i> Về trang chủ
+        </a>
+    </header>
+
+    <!-- Nội dung bài viết -->
+    <main class="max-w-3xl w-full mx-auto px-4 py-12 flex-grow">
+        <article class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 md:p-12">
+            <div id="post-loading" class="text-center py-20 text-gray-400">
+                <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-brand"></i>
+                <p>Đang tải nội dung bài viết...</p>
+            </div>
+            
+            <div id="post-content-wrapper" class="hidden space-y-6">
+                <div id="post-cover-container"></div>
+                <div id="post-blocks-container" class="space-y-4 text-gray-700 text-base leading-relaxed">
+                    <!-- Các khối nội dung render ở đây -->
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-8 text-center text-sm">
+        &copy; 2026 VST Builder. All rights reserved.
+    </footer>
+
+    <!-- Script lấy ID từ URL và gọi Supabase -->
+    <script>
+        const SUPABASE_URL = 'https://znbsawlfrthwhchfetgv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnNhd2xmcnRod2hjaGZldGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5ODc4NzgsImV4cCI6MjEwMzU2Mzg3OH0.CiPtEJt0b0fd0W4ERzTobJl2VH3aJ6JHgEkhYFmuSog';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadSinglePost() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const postId = urlParams.get('id');
+
+            if (!postId) {
+                document.getElementById('post-loading').innerHTML = `<p class="text-red-500">Không tìm thấy mã bài viết!</p>`;
+                return;
+            }
+
+            const { data, error } = await supabaseClient.from('posts').select('*').eq('id', postId).single();
+
+            if (error || !data) {
+                document.getElementById('post-loading').innerHTML = `<p class="text-red-500">Bài viết không tồn tại hoặc đã bị xóa.</p>`;
+                return;
+            }
+
+            document.getElementById('post-loading').classList.add('hidden');
+            document.getElementById('post-content-wrapper').classList.remove('hidden');
+
+            let dateStr = data.created_at ? new Date(data.created_at).toLocaleDateString('vi-VN') : '';
+            let catsArray = Array.isArray(data.category) ? data.category : (typeof data.category === 'string' ? JSON.parse(data.category || '[]') : [data.category]);
+            let catsDisplay = catsArray.join(', ');
+            let cover = data.image || 'https://placehold.co/1200x500/f3f4f6/9ca3af?text=VST';
+
+            document.getElementById('post-cover-container').innerHTML = `
+                <div class="-mx-8 -mt-8 md:-mx-12 md:-mt-12 mb-8 relative h-[350px] md:h-[450px] overflow-hidden rounded-t-2xl">
+                    <img src="${cover}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+                    <div class="absolute bottom-6 md:bottom-10 left-6 md:left-10 right-6 md:right-10 flex flex-col gap-3">
+                        <h1 class="text-white text-3xl md:text-4xl font-bold leading-snug drop-shadow-md">${data.title}</h1>
+                        <div class="flex items-center gap-3 text-sm text-gray-200">
+                            <span class="px-3 py-1.5 rounded-full font-bold bg-brand text-white border border-brand-light/30">${catsDisplay}</span>
+                            <span><i class="fa-regular fa-calendar mr-1"></i>${dateStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const blocksContainer = document.getElementById('post-blocks-container');
+            blocksContainer.innerHTML = '';
+
+            if (data.content_blocks) {
+                let blocks = typeof data.content_blocks === 'string' ? JSON.parse(data.content_blocks) : data.content_blocks;
+                blocks.forEach(b => {
+                    let el = document.createElement('div');
+                    if (b.type === 'heading') {
+                        el.innerHTML = `<h2 class="text-2xl font-bold text-gray-900 mt-8 mb-3">${b.value}</h2>`;
+                    } else if (b.type === 'paragraph') {
+                        el.innerHTML = `<p class="mb-4">${b.value}</p>`;
+                    } else if (b.type === 'image') {
+                        let imgUrl = typeof b.value === 'object' ? b.value.url : b.value;
+                        let imgCap = typeof b.value === 'object' ? b.value.caption : 'Ảnh minh họa';
+                        el.innerHTML = `<div class="my-6"><img src="${imgUrl}" class="w-full rounded-xl shadow max-h-[500px] object-cover"><p class="text-xs text-center text-gray-500 mt-2 italic">${imgCap}</p></div>`;
+                    }
+                    blocksContainer.appendChild(el);
+                });
+            } else {
+                blocksContainer.innerHTML = `<p>${data.content}</p>`;
+            }
+        }
+
+        loadSinglePost();
+    </script>
+</body>
+</html>

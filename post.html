@@ -23,8 +23,8 @@
         <a href="home.html" class="flex items-center">
             <img src="https://znbsawlfrthwhchfetgv.supabase.co/storage/v1/object/public/Image/VST%20Builder%20Logo.png" alt="VST Builder Logo" class="h-10 w-auto">
         </a>
-        <a href="home.html" class="text-sm text-gray-600 hover:text-brand transition flex items-center gap-1 font-medium">
-            <i class="fa-solid fa-arrow-left"></i> Về trang chủ
+        <a href="home.html" id="back-btn" class="text-sm text-gray-600 hover:text-brand transition flex items-center gap-1 font-medium">
+            <i class="fa-solid fa-arrow-left"></i> <span>Về trang chủ</span>
         </a>
     </header>
 
@@ -75,10 +75,27 @@
             document.getElementById('post-loading').classList.add('hidden');
             document.getElementById('post-content-wrapper').classList.remove('hidden');
 
-            let dateStr = data.created_at ? new Date(data.created_at).toLocaleDateString('vi-VN') : '';
-            let catsArray = Array.isArray(data.category) ? data.category : (typeof data.category === 'string' ? JSON.parse(data.category || '[]') : [data.category]);
-            let catsDisplay = catsArray.join(', ');
-            let cover = data.image || 'https://placehold.co/1200x500/f3f4f6/9ca3af?text=VST';
+            const catDict = { 'Cá nhân': 'Personal', 'Tổ chức': 'Organization', 'Khách du lịch': 'Traveler' };
+            
+            let dateStr = data.created_at ? new Date(data.created_at).toLocaleDateString(data.lang === 'en' ? 'en-US' : 'vi-VN') : '';
+            let rawCats = Array.isArray(data.category) ? data.category : (typeof data.category === 'string' ? JSON.parse(data.category || '[]') : [data.category]);
+            
+            if (data.lang === 'en') {
+                const backBtn = document.getElementById('back-btn');
+                if (backBtn) {
+                    backBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i> <span>Back to Home</span>';
+                    backBtn.href = 'home.html?lang=en#news'; // Gắn thêm #news vào đây
+                }
+                rawCats = rawCats.map(c => catDict[c] || c);
+            } else {
+                const backBtn = document.getElementById('back-btn');
+                if (backBtn) {
+                    backBtn.href = 'home.html?lang=vi#news'; // Gắn thêm #news vào đây
+                }
+            }
+
+            let catsDisplay = rawCats.join(', ');
+            let cover = data.image || 'https://placehold.co/1200x500/f3f4f6/9ca3af?text=VST';   
 
             document.getElementById('post-cover-container').innerHTML = `
                 <div class="-mx-8 -mt-8 md:-mx-12 md:-mt-12 mb-8 relative h-[350px] md:h-[450px] overflow-hidden rounded-t-2xl">

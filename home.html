@@ -369,7 +369,12 @@
                 let dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString(currentLang === 'vi' ? 'vi-VN' : 'en-US') : '';
                 
                 // Ép kiểu category về mảng để hiển thị dấu phẩy ngăn cách gọn gàng
+                const catDict = { 'Cá nhân': 'Personal', 'Tổ chức': 'Organization', 'Khách du lịch': 'Traveler' };
                 let catsArray = Array.isArray(post.category) ? post.category : (typeof post.category === 'string' ? JSON.parse(post.category || '[]') : [post.category]);
+                
+                if (currentLang === 'en') {
+                    catsArray = catsArray.map(c => catDict[c] || c);
+                }
                 let catsDisplay = catsArray.join(', ');
 
                 const card = document.createElement('div');
@@ -409,7 +414,12 @@
             
             let cover = post.image || 'https://placehold.co/800x400/f3f4f6/9ca3af?text=VST';
             let dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString(currentLang === 'vi' ? 'vi-VN' : 'en-US') : '';
+            const catDict = { 'Cá nhân': 'Personal', 'Tổ chức': 'Organization', 'Khách du lịch': 'Traveler' };
             let catsArray = Array.isArray(post.category) ? post.category : (typeof post.category === 'string' ? JSON.parse(post.category || '[]') : [post.category]);
+            
+            if (currentLang === 'en') {
+                catsArray = catsArray.map(c => catDict[c] || c);
+            }
             let catsDisplay = catsArray.join(', ');
 
             // Cấu trúc ảnh cover tràn viền (dùng margin âm -mx-6 -mt-6 để phá khung padding)
@@ -470,6 +480,16 @@
                 });
             });
         }
+
+        // Tự động set ngôn ngữ dựa trên URL (khi back từ trang post về)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlLang = urlParams.get('lang');
+        if (urlLang === 'en') {
+            setLanguage('en');
+        } else {
+            setLanguage('vi');
+        }
+        
     </script>
 </body>
 </html>

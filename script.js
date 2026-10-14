@@ -1145,9 +1145,9 @@ async function checkAndEnforceProfileName() {
     const nameInput = document.getElementById('prof-name');
     
     if (!data || !data.full_name || data.full_name.trim() === '') {
-        if (nameInput) { // Chỉ bật popup yêu cầu nhập tên nếu đang đứng ở trang có hỗ trợ modal profile (bản web)
-            alert("Welcome! Please enter your full name to complete your profile setup.");
-            openProfileModal();
+        if (nameInput) { 
+            // Ẩn cái alert cũ đi cho mượt, gọi thẳng Modal Terms ra trước
+            showTermsModal(); 
         }
     } else {
         if (document.getElementById('prof-email')) document.getElementById('prof-email').value = currentUser.email;
@@ -3019,4 +3019,48 @@ function lockProfileForm() {
     if (logoutBtn) logoutBtn.style.display = 'block';
     if (saveBtn) saveBtn.style.display = 'none';
     if (editBtn) editBtn.style.display = 'block';
+}
+
+// Hiển thị modal
+function showTermsModal() {
+    document.getElementById('terms-modal').style.display = 'block';
+}
+
+// Ẩn modal
+function hideTermsModal() {
+    document.getElementById('terms-modal').style.display = 'none';
+}
+
+// Bật/tắt nút Continue dựa vào việc check đủ 2 ô chưa
+function toggleContinueButton() {
+    const termsChecked = document.getElementById('check-terms').checked;
+    const policyChecked = document.getElementById('check-policy').checked;
+    const continueBtn = document.getElementById('btn-continue-terms');
+
+    if (termsChecked && policyChecked) {
+        continueBtn.disabled = false;
+        continueBtn.style.cursor = 'pointer';
+        continueBtn.style.opacity = '1';
+    } else {
+        continueBtn.disabled = true;
+        continueBtn.style.cursor = 'not-allowed';
+        continueBtn.style.opacity = '0.5';
+    }
+}
+
+// Xử lý khi khách bấm Cancel
+async function handleCancelTerms() {
+    alert("You must agree to the Terms of Service and Privacy Policy to create an account.");
+    // Ép văng ra ngoài
+    await supabaseClient.auth.signOut();
+    // Load lại trang để reset giao diện về trạng thái chưa đăng nhập
+    window.location.reload(); 
+}
+
+// Xử lý khi khách bấm Continue (đã tick đủ 2 ô)
+function handleAcceptTerms() {
+    hideTermsModal();
+    // Bước tiếp theo: Gọi hàm ép nhập tên Profile của mày ra
+    // Sửa tên hàm openProfileModal() dưới đây cho đúng với code cũ của mày nhé
+    openProfileModal(); 
 }

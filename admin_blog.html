@@ -42,6 +42,9 @@
             <a href="home.html" target="_blank" class="text-sm text-brand font-semibold hover:underline flex items-center gap-1">
                 <i class="fa-solid fa-globe"></i> Xem trang chủ
             </a>
+            <button onclick="openHomeContentModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition shadow-md flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square"></i> Sửa Trang Chủ
+            </button>
             <button onclick="openEditorModal()" class="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-lg font-medium text-sm transition shadow-md flex items-center gap-2">
                 <i class="fa-solid fa-plus"></i> Viết bài mới
             </button>
@@ -136,7 +139,27 @@
             </div>
         </div>
     </div>
+    <!-- MODAL SỬA TRANG CHỦ -->
+    <div id="home-content-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-lg text-gray-900">Quản lý nội dung Trang Chủ</h3>
+                <button onclick="closeHomeContentModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-grow bg-gray-50 space-y-6" id="home-content-form">
+                <!-- Nội dung render động -->
+            </div>
 
+            <div class="px-6 py-4 border-t border-gray-200 bg-white flex justify-between items-center">
+                <button onclick="seedDefaultHomeContent()" class="text-sm text-gray-500 hover:text-brand transition"><i class="fa-solid fa-rotate-right"></i> Khôi phục dữ liệu mẫu</button>
+                <div class="flex gap-3">
+                    <button onclick="closeHomeContentModal()" class="px-5 py-2 rounded-xl border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-100 transition">Hủy</button>
+                    <button onclick="saveHomeContent()" id="save-home-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-semibold transition shadow-md">Lưu Thay Đổi</button>
+                </div>
+            </div>
+        </div>
+    </div>
 <script>
         const SUPABASE_URL = 'https://znbsawlfrthwhchfetgv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnNhd2xmcnRod2hjaGZldGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5ODc4NzgsImV4cCI6MjEwMzU2Mzg3OH0.CiPtEJt0b0fd0W4ERzTobJl2VH3aJ6JHgEkhYFmuSog';
@@ -394,6 +417,171 @@
         }
 
         fetchAdminPosts();
+
+        // ================= CẤU HÌNH SỬA TRANG CHỦ =================
+        const homeKeys = [
+            { section: 'Màn Hình Chính (Hero)' },
+            { key: 'hero_badge', label: 'Badge nhỏ', type: 'input' },
+            { key: 'hero_title', label: 'Tiêu đề chính', type: 'textarea' },
+            { key: 'hero_desc', label: 'Đoạn mô tả', type: 'textarea' },
+            { key: 'hero_btn_explore', label: 'Nút Khám phá', type: 'input' },
+            { key: 'hero_btn_create', label: 'Nút Tạo lịch trình', type: 'input' },
+
+            { section: 'Về Dự Án (About)' },
+            { key: 'about_title', label: 'Tiêu đề chính', type: 'input' },
+            { key: 'about_desc', label: 'Mô tả ngắn', type: 'textarea' },
+            { key: 'about_card1_title', label: 'Card Cá nhân - Tiêu đề', type: 'input' },
+            { key: 'about_card1_desc', label: 'Card Cá nhân - Mô tả', type: 'textarea' },
+            { key: 'about_card2_title', label: 'Card Tổ chức - Tiêu đề', type: 'input' },
+            { key: 'about_card2_desc', label: 'Card Tổ chức - Mô tả', type: 'textarea' },
+            { key: 'about_card3_title', label: 'Card Khách DL - Tiêu đề', type: 'input' },
+            { key: 'about_card3_desc', label: 'Card Khách DL - Mô tả', type: 'textarea' },
+
+            { section: 'Người Sáng Lập (Founder)' },
+            { key: 'founder_subtitle', label: 'Tiêu đề phụ', type: 'input' },
+            { key: 'founder_quote', label: 'Câu Quote', type: 'textarea' },
+            { key: 'founder_desc', label: 'Nội dung chi tiết', type: 'textarea' },
+
+            { section: 'Bài Viết & Bộ Lọc (News)' },
+            { key: 'news_title', label: 'Tiêu đề mục Bài viết', type: 'input' },
+            { key: 'filter_all', label: 'Nút lọc - Tất cả', type: 'input' },
+            { key: 'filter_personal', label: 'Nút lọc - Cá nhân', type: 'input' },
+            { key: 'filter_org', label: 'Nút lọc - Tổ chức', type: 'input' },
+            { key: 'filter_traveler', label: 'Nút lọc - Khách du lịch', type: 'input' },
+            
+            { section: 'Menu & Footer' },
+            { key: 'nav_home', label: 'Menu - Trang chủ', type: 'input' },
+            { key: 'nav_about', label: 'Menu - Về dự án', type: 'input' },
+            { key: 'nav_founder', label: 'Menu - Founder', type: 'input' },
+            { key: 'nav_news', label: 'Menu - Bài viết', type: 'input' },
+            { key: 'nav_itinerary', label: 'Menu - Tạo Lịch Trình', type: 'input' },
+            { key: 'footer_desc', label: 'Footer - Mô tả', type: 'textarea' },
+            { key: 'footer_quicklinks', label: 'Footer - Tiêu đề Liên kết nhanh', type: 'input' },
+            { key: 'footer_connect', label: 'Footer - Tiêu đề Kết nối', type: 'input' },
+            { key: 'footer_terms', label: 'Footer - Điều khoản Dịch vụ', type: 'input' },
+            { key: 'footer_privacy', label: 'Footer - Chính sách Bảo mật', type: 'input' }
+        ];
+
+        async function openHomeContentModal() {
+            document.getElementById('home-content-modal').classList.remove('hidden');
+            const container = document.getElementById('home-content-form');
+            container.innerHTML = '<div class="text-center py-12 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><p>Đang tải dữ liệu...</p></div>';
+            
+            const { data, error } = await supabaseClient.from('home_content').select('*');
+            let dbData = {};
+            if (data) data.forEach(row => { dbData[row.key_name] = row; });
+
+            let html = '';
+            homeKeys.forEach(item => {
+                if (item.section) {
+                    html += `<h4 class="font-bold text-lg text-brand-dark border-b pb-2 mt-6 mb-4 col-span-2">${item.section}</h4>`;
+                    return;
+                }
+                let valVi = dbData[item.key] ? dbData[item.key].vi_text : '';
+                let valEn = dbData[item.key] ? dbData[item.key].en_text : '';
+                
+                let inputVi = item.type === 'textarea' 
+                    ? `<textarea id="hc-vi-${item.key}" class="w-full px-3 py-2 border-l-4 border-green-500 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none h-20">${valVi}</textarea>`
+                    : `<input type="text" id="hc-vi-${item.key}" class="w-full px-3 py-2 border-l-4 border-green-500 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none" value="${valVi}">`;
+                
+                let inputEn = item.type === 'textarea' 
+                    ? `<textarea id="hc-en-${item.key}" class="w-full px-3 py-2 border-l-4 border-blue-500 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none h-20">${valEn}</textarea>`
+                    : `<input type="text" id="hc-en-${item.key}" class="w-full px-3 py-2 border-l-4 border-blue-500 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none" value="${valEn}">`;
+
+                html += `
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">🔑 ${item.label}</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><span class="text-xs text-gray-500 mb-1 block">🇻🇳 Tiếng Việt:</span>${inputVi}</div>
+                            <div><span class="text-xs text-gray-500 mb-1 block">🇬🇧 Tiếng Anh:</span>${inputEn}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function closeHomeContentModal() {
+            document.getElementById('home-content-modal').classList.add('hidden');
+        }
+
+        async function saveHomeContent() {
+            const btn = document.getElementById('save-home-btn');
+            btn.innerText = "Đang lưu...";
+            btn.disabled = true;
+
+            let payloads = [];
+            homeKeys.forEach(item => {
+                if (item.section) return;
+                payloads.push({
+                    key_name: item.key,
+                    vi_text: document.getElementById(`hc-vi-${item.key}`).value,
+                    en_text: document.getElementById(`hc-en-${item.key}`).value
+                });
+            });
+
+            const { error } = await supabaseClient.from('home_content').upsert(payloads);
+            btn.innerText = "Lưu Thay Đổi";
+            btn.disabled = false;
+
+            if (error) alert("Lỗi khi lưu: " + error.message);
+            else { alert("✅ Đã cập nhật thành công nội dung Trang chủ!"); closeHomeContentModal(); }
+        }
+
+        async function seedDefaultHomeContent() {
+            if(!confirm("Hành động này sẽ ghi đè dữ liệu hiện tại bằng dữ liệu mặc định ban đầu. Mày chắc chưa?")) return;
+            const defaultData = [
+                // ================= KHỐI HERO =================
+                { key_name: 'hero_badge', vi_text: 'Sáng kiến Phát triển Bền vững', en_text: 'Sustainable Development Initiative' },
+                { key_name: 'hero_title', vi_text: 'Xây dựng Tương lai Bền vững cho Du Lịch Việt Nam', en_text: 'Building a Sustainable Future for Vietnam\'s Tourism' },
+                { key_name: 'hero_desc', vi_text: 'Kết nối cộng đồng làm du lịch và du khách quốc tế để kiến tạo những trải nghiệm nguyên bản. Cung cấp bộ công cụ vận hành xanh tinh gọn, giúp các doanh nghiệp (MSMEs) tối ưu hóa chi phí và phát triển bền vững.', en_text: 'Connecting the tourism community and international travelers to create authentic experiences. Providing a lean green operational toolkit to help MSMEs optimize costs and grow sustainably.' },
+                { key_name: 'hero_btn_explore', vi_text: 'Khám phá Sáng kiến Xanh', en_text: 'Explore Green Initiatives' },
+                { key_name: 'hero_btn_create', vi_text: 'Tạo Lịch Trình Ngay', en_text: 'Build Your Itinerary Now' },
+
+                // ================= KHỐI ABOUT =================
+                { key_name: 'about_title', vi_text: 'Về VST Builder', en_text: 'About VST Builder' },
+                { key_name: 'about_desc', vi_text: 'Hành trình của VST Builder bắt nguồn từ kênh truyền thông Vietnam Solo Trip. Với cộng đồng hơn 20.000 người theo dõi, chúng tôi đã trực tiếp tư vấn lịch trình và điểm đến cho hơn 50 du khách quốc tế đến Việt Nam. Từ những bước đệm vững chắc đó, VST Builder đã mở rộng hợp tác chiến lược với đơn vị cung ứng tour tại Sapa để hỗ trợ thúc đẩy doanh số, đồng thời tổ chức thành công 2 khóa đào tạo chuyên sâu về truyền thông và quay dựng video du lịch cho các hướng dẫn viên bản địa. Chúng tôi hướng tới việc gỡ bỏ rào cản chuyển đổi số và xây dựng nền tảng phát triển bền vững cho cộng đồng làm du lịch và dịch vụ lưu trú.', en_text: 'The journey of VST Builder began with the Vietnam Solo Trip media channel. With a community of over 20,000 followers, we have directly consulted on itineraries and destinations for more than 50 international tourists visiting Vietnam. From those solid stepping stones, VST Builder expanded its strategic partnerships with tour operators in Sapa to support sales growth, and successfully organized 2 intensive training courses on media and travel video production for local tour guides. We aim to remove barriers to digital transformation and build a sustainable development foundation for the tourism and hospitality community.' },
+                { key_name: 'about_card1_title', vi_text: 'Truyền thông Du lịch', en_text: 'Travel Media' },
+                { key_name: 'about_card1_desc', vi_text: 'Xây dựng và phát triển các kênh truyền thông nhằm quảng bá vẻ đẹp văn hóa, thiên nhiên Việt Nam đến du khách quốc tế. Đồng thời định hướng truyền thông về du lịch và lưu trú xanh, bền vững.', en_text: 'Develop and expand communication channels to showcase the beauty of Vietnam\'s culture and natural landscapes to international tourists, while also guiding the narrative around green, sustainable tourism and hospitality.' },
+                { key_name: 'about_card2_title', vi_text: 'Hỗ trợ Đơn vị cung ứng Tour', en_text: 'Tour Operator Support' },
+                { key_name: 'about_card2_desc', vi_text: 'Đồng hành cùng các doanh nghiệp vừa và nhỏ (MSMEs) tại địa phương trong việc tối ưu hóa quy trình tiếp cận khách hàng quốc tế và đẩy mạnh sale tour. VST Builder cung cấp các giải pháp vận hành tinh gọn giúp đập tan lầm tưởng "chuyển đổi xanh là tốn kém", từ đó giúp các đơn vị kinh doanh hiệu quả và thân thiện với môi trường hơn.', en_text: 'Accompanying local micro, small, and medium enterprises (MSMEs) in optimizing their international customer outreach and boosting tour sales. VST Builder provides lean operational solutions that shatter the myth that "going green is expensive", thereby helping operators run their businesses more efficiently and eco-friendly.' },
+                { key_name: 'about_card3_title', vi_text: 'Đào tạo nhân lực', en_text: 'Human Resource Training' },
+                { key_name: 'about_card3_desc', vi_text: 'Tập trung phát triển nguồn nhân lực chất lượng cao cho ngành du lịch và khách sạn. Chúng tôi chú trọng trang bị kỹ năng số, lan tỏa lối sống bền vững, đồng thời cung cấp kiến thức chuyên sâu về lưu trú và du lịch xanh, từ đó tạo nền tảng vững chắc cho sự phát triển bền vững của toàn ngành.', en_text: 'Focusing on developing high-quality human resources for the tourism and hospitality industry. We emphasize equipping digital skills, spreading sustainable lifestyles, and providing in-depth knowledge on green tourism and accommodation, thereby creating a solid foundation for the sustainable development of the entire industry.' },
+
+                // ================= KHỐI FOUNDER =================
+                { key_name: 'founder_subtitle', vi_text: 'Lời ngỏ từ Founder', en_text: 'A Note from Founder' },
+                { key_name: 'founder_quote', vi_text: '"Du lịch không chỉ là hành trình khám phá, mà là cơ hội để tôn vinh văn hóa bản địa và bảo vệ giá trị bền vững của cộng đồng."', en_text: '"Tourism is not just a journey of discovery, but an opportunity to celebrate local culture and protect the sustainable values of the community."' },
+                { key_name: 'founder_desc', vi_text: 'Từ kinh nghiệm quản lý trực tiếp khách sạn SME và quá trình đào tạo nhân sự du lịch địa phương tại Sapa, tôi nhận ra rào cản lớn nhất của phát triển bền vững không nằm ở công nghệ, mà là sự thiếu hụt một bộ công cụ vận hành tinh gọn, phù hợp với dòng tiền hạn hẹp của các doanh nghiệp nhỏ, cũng như thiếu năng lực và nhận thức về phát triển bền vững của nhân sự trong ngành. VST Builder ra đời để giải quyết nút thắt đó. Chúng tôi không chỉ cung cấp lịch trình miễn phí cho hàng chục du khách quốc tế mỗi tháng, mà còn đồng hành cùng các chủ cơ sở lưu trú tối ưu hóa chi phí năng lượng, giảm thiểu rác thải nhựa và xây dựng văn hóa dịch vụ văn minh, bền vững.', en_text: 'From my experience directly managing SME hotels and training local tourism personnel in Sapa, I realized that the biggest barrier to sustainable development is not technology, but the lack of a lean operational toolkit suitable for the tight cash flows of small businesses, alongside a lack of awareness and capacity regarding sustainability among industry personnel. VST Builder was born to solve that bottleneck. We not only provide free itineraries for dozens of international tourists every month, but also accompany accommodation owners to optimize energy costs, minimize plastic waste, and build a civilized and sustainable service culture.' },
+
+                // ================= MENU, NEWS & FOOTER =================
+                { key_name: 'nav_home', vi_text: 'Trang chủ', en_text: 'Home' },
+                { key_name: 'nav_about', vi_text: 'Về dự án', en_text: 'About' },
+                { key_name: 'nav_founder', vi_text: 'Người sáng lập', en_text: 'Founder' },
+                { key_name: 'nav_news', vi_text: 'Bài viết', en_text: 'News' },
+                { key_name: 'nav_itinerary', vi_text: 'Tạo lịch trình', en_text: 'Build Your Itinerary' },
+                
+                { key_name: 'news_title', vi_text: 'Bài viết về Du lịch Bền vững', en_text: 'Sustainable Tourism News' },
+                { key_name: 'filter_all', vi_text: 'Tất cả', en_text: 'All' },
+                { key_name: 'filter_personal', vi_text: 'Cá nhân', en_text: 'Personal' },
+                { key_name: 'filter_org', vi_text: 'Tổ chức', en_text: 'Organization' },
+                { key_name: 'filter_traveler', vi_text: 'Khách du lịch', en_text: 'Traveler' },
+                
+                { key_name: 'footer_desc', vi_text: 'Đồng hành cùng bạn xây dựng tương lai du lịch xanh, thân thiện và phát triển bền vững tại Việt Nam.', en_text: 'Accompanying you to build a green, friendly, and sustainable tourism future in Vietnam.' },
+                { key_name: 'footer_quicklinks', vi_text: 'Liên kết nhanh', en_text: 'Quick Links' },
+                { key_name: 'footer_connect', vi_text: 'Kết nối', en_text: 'Connect' },
+                { key_name: 'footer_terms', vi_text: 'Điều khoản Dịch vụ', en_text: 'Terms of Service' },
+                { key_name: 'footer_privacy', vi_text: 'Chính sách Bảo mật', en_text: 'Privacy Policy' }
+            ];
+            
+            const btn = document.querySelector('button[onclick="seedDefaultHomeContent()"]');
+            const originalText = btn.innerHTML;
+            btn.innerText = "Đang khôi phục...";
+            
+            await supabaseClient.from('home_content').upsert(defaultData);
+            
+            btn.innerHTML = originalText;
+            openHomeContentModal(); 
+        }
     </script>
 </body>
 </html>

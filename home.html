@@ -281,34 +281,66 @@
         let allPostsCache = [];
         let currentFilter = 'Tất cả';
 
-        const i18nData = {
-            vi: {
-                nav_home: "Trang chủ", nav_about: "Về dự án", nav_founder: "Founder", nav_news: "Bài viết", nav_itinerary: "Tạo Lịch Trình",
-                hero_badge: "Sáng kiến Phát triển Bền vững", hero_title: "Xây dựng Tương lai Bền vững cho Du Lịch Việt Nam", hero_desc: "Kết nối cộng đồng làm du lịch và du khách quốc tế để kiến tạo những trải nghiệm nguyên bản. Cung cấp bộ công cụ vận hành xanh tinh gọn, giúp các doanh nghiệp vừa, nhỏ và siêu nhỏ (MSMEs) tối ưu hóa chi phí và phát triển bền vững.",
-                hero_btn_explore: "Khám phá Sáng kiến Xanh", hero_btn_create: "Tạo Lịch Trình Ngay",
-                about_title: "Về VST Builder", about_desc: "Cung cấp kiến thức, câu chuyện và mạng lưới kết nối để gỡ bỏ rào cản chuyển đổi xanh trong ngành dịch vụ lưu trú và du lịch tại Việt Nam.",
-                about_card1_title: "Dành cho Cá nhân", about_card1_desc: "Đào tạo năng lực số, nâng cao kỹ năng nghề nghiệp, chủ động tạo sinh kế bền vững cho người dân bản địa.",
-                about_card2_title: "Dành cho Tổ chức", about_card2_desc: "Đập tan lầm tưởng \"chuyển đổi xanh là tốn kém\". Chia sẻ câu chuyện, bài học và sáng kiến chuyển đổi xanh. Hướng tới xây dựng hệ thống vận hành xanh tinh gọn cho MSMEs.",
-                about_card3_title: "Dành cho Khách Du Lịch", about_card3_desc: "Trạm thông tin tin cậy cung cấp các lịch trình thiết kế riêng biệt. Kết nối bạn trực tiếp với người dân bản địa để trải nghiệm văn hóa nguyên bản và thực hành du lịch có trách nhiệm.",
-                founder_subtitle: "Lời ngỏ từ Founder", founder_quote: "\"Du lịch không chỉ là hành trình khám phá, mà là cơ hội để tôn vinh văn hóa bản địa và bảo vệ giá trị bền vững của cộng đồng.\"", founder_desc: "Từ kinh nghiệm quản lý trực tiếp khách sạn SME và quá trình đào tạo nhân sự du lịch địa phương tại Sapa, tôi nhận ra rào cản lớn nhất của phát triển bền vững không nằm ở công nghệ, mà là sự thiếu hụt một bộ công cụ vận hành tinh gọn, phù hợp với dòng tiền hạn hẹp của các doanh nghiệp nhỏ, cũng như thiếu năng lực và nhận thức về phát triển bền vững của nhân sự trong ngành. VST Builder ra đời để giải quyết nút thắt đó. Chúng tôi không chỉ cung cấp lịch trình miễn phí cho hàng chục du khách quốc tế mỗi tháng, mà còn đồng hành cùng các chủ cơ sở lưu trú tối ưu hóa chi phí năng lượng, giảm thiểu rác thải nhựa và xây dựng văn hóa dịch vụ văn minh, bền vững.",
-                news_title: "Bài viết về Du lịch Bền vững", filter_all: "Tất cả", filter_personal: "Cá nhân", filter_org: "Tổ chức", filter_traveler: "Khách du lịch",
-                footer_desc: "Đồng hành cùng bạn xây dựng tương lai du lịch xanh, thân thiện và phát triển bền vững tại Việt Nam.", footer_quicklinks: "Liên kết nhanh", footer_connect: "Kết nối",
-                footer_terms: "Điều khoản Dịch vụ", footer_privacy: "Chính sách Bảo mật"
-            },
-            en: {
-                nav_home: "Home", nav_about: "About", nav_founder: "Founder", nav_news: "News", nav_itinerary: "Build Itinerary",
-                hero_badge: "Sustainable Development Initiative", hero_title: "Building a Sustainable Future for Vietnam's Tourism", hero_desc: "Connecting the tourism community and international travelers to create authentic experiences. Providing a lean green operational toolkit to help micro, small, and medium enterprises (MSMEs) optimize costs and grow sustainably.",
-                hero_btn_explore: "Explore Green Initiatives", hero_btn_create: "Build Itinerary Now",
-                about_title: "About VST Builder", about_desc: "Providing knowledge, stories, and a network to remove barriers to green transition in the accommodation and tourism sectors in Vietnam.",
-                about_card1_title: "For Individuals", about_card1_desc: "Develop digital capabilities, enhance vocational skills, and proactively create sustainable livelihoods for indigenous people.",
-                about_card2_title: "For Organizations", about_card2_desc: "Shattering the myth that \"going green is expensive\". Sharing stories, lessons, and green transition initiatives. Aiming to build a lean green operational system for MSMEs.",
-                about_card3_title: "For Travelers", about_card3_desc: "A reliable information hub providing customized itineraries. Connecting you directly with locals for authentic cultural experiences and responsible travel practices.",
-                founder_subtitle: "A Note from Founder", founder_quote: "\"Tourism is not just a journey of discovery, but an opportunity to celebrate local culture and protect the sustainable values of the community.\"", founder_desc: "From my experience directly managing SME hotels and training local tourism personnel in Sapa, I realized that the biggest barrier to sustainable development is not technology, but the lack of a lean operational toolkit suitable for the tight cash flows of small businesses, alongside a lack of awareness and capacity regarding sustainability among industry personnel. VST Builder was born to solve that bottleneck. We not only provide free itineraries for dozens of international tourists every month, but also accompany accommodation owners to optimize energy costs, minimize plastic waste, and build a civilized and sustainable service culture.",
-                news_title: "Sustainable Tourism News", filter_all: "All", filter_personal: "Personal", filter_org: "Organization", filter_traveler: "Traveler",
-                footer_desc: "Accompanying you to build a green, friendly, and sustainable tourism future in Vietnam.", footer_quicklinks: "Quick Links", footer_connect: "Connect",
-                footer_terms: "Terms of Service", footer_privacy: "Privacy Policy"
+        // Biến lưu trữ dữ liệu đa ngôn ngữ kéo từ DB
+        let i18nData = { vi: {}, en: {} };
+        
+        // Khởi tạo app: Kéo text Trang chủ -> Cài đặt ngôn ngữ -> Kéo Bài viết
+        async function initHomeContent() {
+            const { data, error } = await supabaseClient.from('home_content').select('*');
+            
+            if (!error && data && data.length > 0) {
+                // Đổ dữ liệu từ DB vào Object
+                data.forEach(item => {
+                    i18nData.vi[item.key_name] = item.vi_text;
+                    i18nData.en[item.key_name] = item.en_text;
+                });
+            } else {
+                console.warn("Chưa có dữ liệu home_content trong DB, vui lòng cấu hình trong Admin.");
             }
-        };
+
+            // Tự động set ngôn ngữ dựa trên URL hoặc mặc định là Tiếng Việt
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlLang = urlParams.get('lang');
+            if (urlLang === 'en') {
+                setLanguage('en');
+            } else {
+                setLanguage('vi');
+            }
+
+            // Gọi API lấy bài viết
+            fetchHomePosts();
+        }
+
+        // Thay đổi hàm setLanguage một chút để nó an toàn hơn nếu DB thiếu key
+        function setLanguage(lang) {
+            currentLang = lang;
+            
+            document.getElementById('lang-btn-vi').className = lang === 'vi' ? 'px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition' : 'px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition';
+            document.getElementById('lang-btn-en').className = lang === 'en' ? 'px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition' : 'px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition';
+
+            let btnViMob = document.getElementById('lang-btn-vi-mob');
+            let btnEnMob = document.getElementById('lang-btn-en-mob');
+            if (btnViMob && btnEnMob) {
+                btnViMob.className = lang === 'vi' ? 'px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition' : 'px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition';
+                btnEnMob.className = lang === 'en' ? 'px-3 py-1 rounded-full text-xs font-bold bg-brand text-white shadow-sm transition' : 'px-3 py-1 rounded-full text-xs font-bold text-gray-600 hover:text-brand transition';
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                // Nếu DB có text thì render, không thì để nguyên text HTML ban đầu
+                if (i18nData[lang] && i18nData[lang][key]) {
+                    el.innerText = i18nData[lang][key];
+                }
+            });
+
+            document.getElementById('link-terms').href = `terms.html?lang=${lang}`;
+            document.getElementById('link-privacy').href = `privacy.html?lang=${lang}`;
+
+            renderFilteredPosts();
+        }
+
+        // Mồi chạy hàm init thay vì gọi trực tiếp
+        initHomeContent();
 
         function setLanguage(lang) {
             currentLang = lang;

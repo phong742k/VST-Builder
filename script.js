@@ -1133,27 +1133,26 @@ async function loadUserProfile() {
 async function checkAndEnforceProfileName() {
     if (!currentUser || hasCheckedProfile) return;
     
+    // Lấy thêm cột terms_accepted
     const { data } = await supabaseClient
         .from('profiles')
-        .select('full_name, phone, country, preference')
+        .select('full_name, phone, country, preference, terms_accepted')
         .eq('id', currentUser.id)
         .maybeSingle();
 
     hasCheckedProfile = true;
 
-    // Nếu đang ở bản mobile mà chưa có tên thì không bắt buộc bật popup profile gây vướng, chỉ load dữ liệu nếu có giao diện
-    const nameInput = document.getElementById('prof-name');
-    
-    if (!data || !data.full_name || data.full_name.trim() === '') {
-        if (nameInput) { 
-            // Ẩn cái alert cũ đi cho mượt, gọi thẳng Modal Terms ra trước
-            showTermsModal(); 
-        }
+    // Check thẳng vào cột terms_accepted (Nếu chưa có data, hoặc data là null/false thì bắt check)
+    if (!data || data.terms_accepted !== true) {
+        // Chỉ cần gọi showTermsModal ra, kệ cụ nó tên đã có hay chưa
+        showTermsModal(); 
     } else {
+        // Đã đồng ý policy rồi thì nạp dữ liệu vào form profile
         if (document.getElementById('prof-email')) document.getElementById('prof-email').value = currentUser.email;
-        if (nameInput) nameInput.value = data.full_name || '';
+        if (document.getElementById('prof-name')) document.getElementById('prof-name').value = data.full_name || '';
         if (document.getElementById('prof-country')) document.getElementById('prof-country').value = data.country || '';
         if (document.getElementById('prof-pref') && data.preference) document.getElementById('prof-pref').value = data.preference;
+        
         if (data.phone) {
             let parts = data.phone.trim().split(' ');
             if (parts.length >= 2) {
@@ -3107,6 +3106,7 @@ async function saveOnboardingProfile() {
         phone: fullPhone,
         country: document.getElementById('ob-country').value,
         preference: document.getElementById('ob-pref').value,
+        terms_accepted: true, // THÊM DÒNG NÀY ĐỂ XÁC NHẬN ĐÃ CHẤP THUẬN
         updated_at: new Date()
     };
 

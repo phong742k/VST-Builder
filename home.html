@@ -239,6 +239,8 @@
                 <ul class="space-y-2 text-sm">
                     <li><a href="#home"  data-i18n="nav_home" class="hover:text-brand transition">Trang chủ</a></li>
                     <li><a href="#news"  data-i18n="nav_news" class="hover:text-brand transition">Tips Bền Vững</a></li>
+                    <li><a href="terms.html" id="link-terms" data-i18n="footer_terms" class="hover:text-brand transition">Điều khoản Dịch vụ</a></li>
+                    <li><a href="privacy.html" id="link-privacy" data-i18n="footer_privacy" class="hover:text-brand transition">Chính sách Bảo mật</a></li>
                 </ul>
             </div>
             <div>
@@ -290,7 +292,8 @@
                 about_card3_title: "Dành cho Khách Du Lịch", about_card3_desc: "Trạm thông tin tin cậy cung cấp các lịch trình thiết kế riêng biệt. Kết nối bạn trực tiếp với người dân bản địa để trải nghiệm văn hóa nguyên bản và thực hành du lịch có trách nhiệm.",
                 founder_subtitle: "Lời ngỏ từ Founder", founder_quote: "\"Du lịch không chỉ là hành trình khám phá, mà là cơ hội để tôn vinh văn hóa bản địa và bảo vệ giá trị bền vững của cộng đồng.\"", founder_desc: "Từ kinh nghiệm quản lý trực tiếp khách sạn SME và quá trình đào tạo nhân sự du lịch địa phương tại Sapa, tôi nhận ra rào cản lớn nhất của phát triển bền vững không nằm ở công nghệ, mà là sự thiếu hụt một bộ công cụ vận hành tinh gọn, phù hợp với dòng tiền hạn hẹp của các doanh nghiệp nhỏ, cũng như thiếu năng lực và nhận thức về phát triển bền vững của nhân sự trong ngành. VST Builder ra đời để giải quyết nút thắt đó. Chúng tôi không chỉ cung cấp lịch trình miễn phí cho hàng chục du khách quốc tế mỗi tháng, mà còn đồng hành cùng các chủ cơ sở lưu trú tối ưu hóa chi phí năng lượng, giảm thiểu rác thải nhựa và xây dựng văn hóa dịch vụ văn minh, bền vững.",
                 news_title: "Bài viết về Du lịch Bền vững", filter_all: "Tất cả", filter_personal: "Cá nhân", filter_org: "Tổ chức", filter_traveler: "Khách du lịch",
-                footer_desc: "Đồng hành cùng bạn xây dựng tương lai du lịch xanh, thân thiện và phát triển bền vững tại Việt Nam.", footer_quicklinks: "Liên kết nhanh", footer_connect: "Kết nối"
+                footer_desc: "Đồng hành cùng bạn xây dựng tương lai du lịch xanh, thân thiện và phát triển bền vững tại Việt Nam.", footer_quicklinks: "Liên kết nhanh", footer_connect: "Kết nối",
+                footer_terms: "Điều khoản Dịch vụ", footer_privacy: "Chính sách Bảo mật"
             },
             en: {
                 nav_home: "Home", nav_about: "About", nav_founder: "Founder", nav_news: "News", nav_itinerary: "Build Itinerary",
@@ -302,7 +305,8 @@
                 about_card3_title: "For Travelers", about_card3_desc: "A reliable information hub providing customized itineraries. Connecting you directly with locals for authentic cultural experiences and responsible travel practices.",
                 founder_subtitle: "A Note from Founder", founder_quote: "\"Tourism is not just a journey of discovery, but an opportunity to celebrate local culture and protect the sustainable values of the community.\"", founder_desc: "From my experience directly managing SME hotels and training local tourism personnel in Sapa, I realized that the biggest barrier to sustainable development is not technology, but the lack of a lean operational toolkit suitable for the tight cash flows of small businesses, alongside a lack of awareness and capacity regarding sustainability among industry personnel. VST Builder was born to solve that bottleneck. We not only provide free itineraries for dozens of international tourists every month, but also accompany accommodation owners to optimize energy costs, minimize plastic waste, and build a civilized and sustainable service culture.",
                 news_title: "Sustainable Tourism News", filter_all: "All", filter_personal: "Personal", filter_org: "Organization", filter_traveler: "Traveler",
-                footer_desc: "Accompanying you to build a green, friendly, and sustainable tourism future in Vietnam.", footer_quicklinks: "Quick Links", footer_connect: "Connect"
+                footer_desc: "Accompanying you to build a green, friendly, and sustainable tourism future in Vietnam.", footer_quicklinks: "Quick Links", footer_connect: "Connect",
+                footer_terms: "Terms of Service", footer_privacy: "Privacy Policy"
             }
         };
 
@@ -325,6 +329,9 @@
                 const key = el.getAttribute('data-i18n');
                 if (i18nData[lang][key]) el.innerText = i18nData[lang][key];
             });
+
+            document.getElementById('link-terms').href = `terms.html?lang=${lang}`;
+            document.getElementById('link-privacy').href = `privacy.html?lang=${lang}`;
 
             renderFilteredPosts();
         }

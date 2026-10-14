@@ -137,12 +137,13 @@
         </div>
     </div>
 
-    <script>
+<script>
         const SUPABASE_URL = 'https://znbsawlfrthwhchfetgv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnNhd2xmcnRod2hjaGZldGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5ODc4NzgsImV4cCI6MjEwMzU2Mzg3OH0.CiPtEJt0b0fd0W4ERzTobJl2VH3aJ6JHgEkhYFmuSog';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentEditingId = null;
+        let isBilingual = false;
 
         async function fetchAdminPosts() {
             const container = document.getElementById('admin-posts-list');
@@ -169,7 +170,6 @@
                 let dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString('vi-VN') : 'Vừa xong';
                 let coverImg = post.image || 'https://placehold.co/100x100/f3f4f6/9ca3af?text=VST';
                 let langBadge = post.lang === 'en' ? '<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700">EN</span>' : '<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">VN</span>';
-                
                 let cats = Array.isArray(post.category) ? post.category.join(', ') : (post.category || '');
 
                 const card = document.createElement('div');
@@ -194,8 +194,6 @@
                 container.appendChild(card);
             });
         }
-
-        let isBilingual = false;
 
         function toggleBilingualMode(forceClear = true) {
             const lang = document.getElementById('post-lang').value;
@@ -254,7 +252,7 @@
             document.getElementById('editor-modal').classList.add('hidden');
         }
 
-function addBlock(type, value = '') {
+        function addBlock(type, value = '') {
             const container = document.getElementById('blocks-container');
             const blockId = 'block-' + Math.random().toString(36).substring(2, 7);
             
@@ -316,7 +314,8 @@ function addBlock(type, value = '') {
             `;
             container.appendChild(wrapper);
         }
-       async function savePost() {
+
+        async function savePost() {
             const lang = document.getElementById('post-lang').value;
             const cover = document.getElementById('post-cover').value.trim();
             let categories = [];
@@ -334,12 +333,8 @@ function addBlock(type, value = '') {
                 document.querySelectorAll('#blocks-container > div').forEach(div => {
                     const input = div.querySelector('.block-input');
                     const urlInput = div.querySelector('.block-input-url');
-                    
-                    if (input) {
-                        blocks.push({ type: input.getAttribute('data-type'), value: input.value.trim() });
-                    } else if (urlInput) {
-                        blocks.push({ type: 'image', value: { url: urlInput.value.trim(), caption: div.querySelector('.block-input-cap').value.trim() } });
-                    }
+                    if (input) blocks.push({ type: input.getAttribute('data-type'), value: input.value.trim() });
+                    else if (urlInput) blocks.push({ type: 'image', value: { url: urlInput.value.trim(), caption: div.querySelector('.block-input-cap').value.trim() } });
                 });
 
                 if (blocks.length === 0) { alert("Vui lòng thêm ít nhất một khối nội dung!"); return; }

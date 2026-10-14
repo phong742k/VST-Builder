@@ -3013,7 +3013,7 @@ async function handleLogoClick() {
             await saveToCloud(); // Lưu bản hiện tại lên mây trước khi reload
         }
     }
-    location.reload(); // Tải lại trang chủ sạch sẽ
+    window.location.href = 'home.html';
 }
 
 function enableEditProfile() {

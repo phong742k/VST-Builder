@@ -3089,9 +3089,50 @@ async function handleCancelTerms() {
 }
 
 // Thay đổi hàm handleAcceptTerms hôm trước thành thế này:
-function handleAcceptTerms() {
+// Xử lý khi khách bấm Continue ở màn hình Terms
+async function handleAcceptTerms() {
     hideTermsModal();
-    openOnboardingModal(); // Gọi Modal thông tin mới thay vì modal cũ
+    
+    if (!currentUser) return;
+
+    // Quét nhanh DB xem khách đã có thông tin Profile chưa
+    const { data } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+    // KIỂM TRA: Nếu đã có TÊN thì bypass luôn bước Onboarding
+    if (data && data.full_name && data.full_name.trim() !== '') {
+        // Âm thầm lưu trạng thái đã đồng ý terms lên hệ thống
+        const profileData = {
+            id: currentUser.id,
+            email: currentUser.email,
+            full_name: data.full_name,
+            phone: data.phone || '',
+            country: data.country || '',
+            preference: data.preference || '',
+            terms_accepted: true,
+            updated_at: new Date()
+        };
+        
+        const { error } = await supabaseClient.from('profiles').upsert(profileData);
+        
+        if (!error) {
+            // Cập nhật lại giao diện và cho phép khách dùng app luôn
+            loadUserProfile();
+            if (typeof renderMobileProfileStatus === 'function') {
+                renderMobileProfileStatus();
+            }
+            // Gọi lại popup bouncer để gạ sang Mobile (nếu cần)
+            checkAndShowMobilePopup();
+        } else {
+            alert("Error updating terms: " + error.message);
+        }
+    } else {
+        // KIỂM TRA: Nếu CHƯA CÓ TÊN (Acc mới tinh) -> Bật Onboarding ép nhập
+        openOnboardingModal();
+    }
 }
 
 // Bật Modal Onboarding

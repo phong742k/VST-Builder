@@ -135,7 +135,18 @@ function switchAuthMode(mode) {
 
 // Đăng nhập qua mạng xã hội (Google / Facebook)
 async function handleSocialLogin(providerName) {
-    const currentPath = window.location.pathname;
+    let currentPath = window.location.pathname;
+    
+    // Nếu phát hiện đang dùng điện thoại, tự động bẻ lái Redirect URL về thẳng bản mobile
+    const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    
+    if (isMobile && !currentPath.includes('m_itinerary_builder')) {
+        // Cắt đuôi URL cũ và nối m_itinerary_builder.html vào
+        let basePath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+        if (basePath === '') basePath = '';
+        currentPath = basePath + '/m_itinerary_builder.html';
+    }
+
     const redirectTo = window.location.origin + currentPath;
 
     const { error } = await supabaseClient.auth.signInWithOAuth({ 
@@ -2748,13 +2759,15 @@ if (window.location.pathname.includes('m_itinerary_builder')) {
 }
 
 function checkAndShowMobilePopup() {
+    // THÊM DÒNG NÀY: Nếu URL đang chứa mã đăng nhập của Supabase thì cấm hiện popup cản đường
+    if (window.location.hash.includes('access_token')) return;
+
     const isSmallScreen = window.innerWidth <= 768;
     const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     const hasDismissed = sessionStorage.getItem('hideMobilePopup');
 
     if (isSmallScreen && isTouch && !hasDismissed) {
         const popup = document.getElementById('mobile-suggest-popup');
-        // ĐỔI 'block' THÀNH 'flex' ĐỂ NÓ CĂN GIỮA NHÉ
         if (popup) popup.style.display = 'flex'; 
     }
 }

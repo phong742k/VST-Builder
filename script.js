@@ -1,3 +1,16 @@
+(function() {
+    const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const path = window.location.pathname;
+    
+    // Nếu là điện thoại, KHÔNG ở trang mobile, và trên URL đang chứa mã đăng nhập
+    if (isMobile && !path.includes('m_itinerary_builder') && window.location.hash.includes('access_token')) {
+        let basePath = path.substring(0, path.lastIndexOf('/'));
+        if (path === '/') basePath = '';
+        // Bẻ lái ngay lập tức sang trang mobile kèm theo mã đăng nhập
+        window.location.replace(window.location.origin + basePath + '/m_itinerary_builder.html' + window.location.search + window.location.hash);
+    }
+})();
+
 // --- SUPABASE CONFIG ---
 const SUPABASE_URL = 'https://znbsawlfrthwhchfetgv.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYnNhd2xmcnRod2hjaGZldGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5ODc4NzgsImV4cCI6MjEwMzU2Mzg3OH0.CiPtEJt0b0fd0W4ERzTobJl2VH3aJ6JHgEkhYFmuSog';
@@ -2759,14 +2772,20 @@ if (window.location.pathname.includes('m_itinerary_builder')) {
 }
 
 function checkAndShowMobilePopup() {
-    // THÊM DÒNG NÀY: Nếu URL đang chứa mã đăng nhập của Supabase thì cấm hiện popup cản đường
-    if (window.location.hash.includes('access_token')) return;
-
     const isSmallScreen = window.innerWidth <= 768;
     const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     const hasDismissed = sessionStorage.getItem('hideMobilePopup');
+    const isMobilePage = window.location.pathname.includes('m_itinerary_builder');
 
-    if (isSmallScreen && isTouch && !hasDismissed) {
+    // Kiểm tra xem Modal Terms hoặc Onboarding có đang mở không
+    const termsModal = document.getElementById('terms-modal');
+    const obModal = document.getElementById('onboarding-modal');
+    
+    if (termsModal && termsModal.style.display === 'block') return; // Kẹt ở Terms -> Không hiện popup
+    if (obModal && obModal.style.display === 'flex') return; // Kẹt ở nhập thông tin -> Không hiện popup
+
+    // Nếu màn hình nhỏ, chưa bấm "Stay Here", và ĐANG Ở TRANG WEB thì mới hiện popup gạ gẫm
+    if (isSmallScreen && isTouch && !hasDismissed && !isMobilePage) {
         const popup = document.getElementById('mobile-suggest-popup');
         if (popup) popup.style.display = 'flex'; 
     }
@@ -3130,12 +3149,14 @@ async function saveOnboardingProfile() {
         // Tắt onboarding modal
         document.getElementById('onboarding-modal').style.display = 'none';
         
-        // Sync dữ liệu vừa nhập vào cái Modal xem profile gốc của mày
+        // Sync dữ liệu vừa nhập vào cái Modal xem profile gốc
         loadUserProfile(); 
         
-        // Nếu khách đang dùng bản Mobile, render lại cái cục thông tin ngoài giao diện
         if (typeof renderMobileProfileStatus === 'function') {
             renderMobileProfileStatus();
         }
+
+        // THÊM DÒNG NÀY: Gọi lại popup kiểm tra sau khi khách đã điền xong thông tin
+        checkAndShowMobilePopup();
     }
 }

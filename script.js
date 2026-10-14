@@ -3057,10 +3057,72 @@ async function handleCancelTerms() {
     window.location.reload(); 
 }
 
-// Xử lý khi khách bấm Continue (đã tick đủ 2 ô)
+// Thay đổi hàm handleAcceptTerms hôm trước thành thế này:
 function handleAcceptTerms() {
     hideTermsModal();
-    // Bước tiếp theo: Gọi hàm ép nhập tên Profile của mày ra
-    // Sửa tên hàm openProfileModal() dưới đây cho đúng với code cũ của mày nhé
-    openProfileModal(); 
+    openOnboardingModal(); // Gọi Modal thông tin mới thay vì modal cũ
+}
+
+// Bật Modal Onboarding
+function openOnboardingModal() {
+    const modal = document.getElementById('onboarding-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Auto điền email hiện tại vào ô mờ
+        document.getElementById('ob-email').value = currentUser.email;
+    }
+}
+
+// Xử lý khi khách bấm nút "X" trên Onboarding Modal
+async function handleCancelOnboarding() {
+    alert("You must complete your profile to use our services.");
+    await supabaseClient.auth.signOut();
+    window.location.reload(); 
+}
+
+// Xử lý khi khách bấm Save ở màn Onboarding
+async function saveOnboardingProfile() {
+    if (!currentUser) return;
+    
+    let fullName = document.getElementById('ob-name').value.trim();
+    if (!fullName) {
+        alert("Please fill in your Full Name to save your profile.");
+        return; // Chặn lại nếu bỏ trống tên
+    }
+
+    let countryCode = document.getElementById('ob-country-code').value;
+    let phoneNumber = document.getElementById('ob-phone-number').value.trim();
+
+    if (phoneNumber && (countryCode === 'phone' || countryCode === 'Country' || !countryCode)) {
+        alert("Please select a country code for your phone number!");
+        return;
+    }
+
+    let fullPhone = phoneNumber ? `${countryCode} ${phoneNumber}` : '';
+
+    const profileData = {
+        id: currentUser.id,
+        email: currentUser.email,
+        full_name: fullName,
+        phone: fullPhone,
+        country: document.getElementById('ob-country').value,
+        preference: document.getElementById('ob-pref').value,
+        updated_at: new Date()
+    };
+
+    const { error } = await supabaseClient.from('profiles').upsert(profileData);
+    if (error) {
+        alert("Error saving profile: " + error.message);
+    } else {
+        // Tắt onboarding modal
+        document.getElementById('onboarding-modal').style.display = 'none';
+        
+        // Sync dữ liệu vừa nhập vào cái Modal xem profile gốc của mày
+        loadUserProfile(); 
+        
+        // Nếu khách đang dùng bản Mobile, render lại cái cục thông tin ngoài giao diện
+        if (typeof renderMobileProfileStatus === 'function') {
+            renderMobileProfileStatus();
+        }
+    }
 }
